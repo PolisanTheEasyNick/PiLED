@@ -6,6 +6,7 @@ This program opens TCP server on port 3384 and waits for packets, created in thi
 
 LED PROTOCOL v1.0
 Simply contains HEADER + HMAC-SHA-256 + PAYLOAD
+Note that config lines are hardcoded into `utils.h`
 
 ## HEADER Structure
 ```
