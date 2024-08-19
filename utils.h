@@ -3,6 +3,9 @@
 
 #define BUFFER_SIZE 52 //ver 1.0
 #define SHARED_SECRET "SHARED_KEY"
+#define RED_PIN 17
+#define GREEN_PIN 22
+#define BLUE_PIN 24
 
 void handle_error(const char *msg);
 void logger(const char* format, ...);
