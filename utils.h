@@ -1,6 +1,10 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-void handle_error(const char *msg);
+#define BUFFER_SIZE 52 //ver 1.0
+#define SHARED_SECRET "SHARED_KEY"
 
-#endif // UTILS_H
+void handle_error(const char *msg);
+void logger(const char* format, ...);
+
+#endif //UTILS_H
