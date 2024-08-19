@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 
 project(led-backlight LANGUAGES C)
 
-add_definitions(-DDEBUG)
-
 include(pigpio/util/Findpigpio.cmake)
 
 add_executable(led-backlight main.c

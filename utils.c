@@ -10,7 +10,6 @@ void handle_error(const char *msg) {
 }
 
 void logger(const char *format, ...) {
-#ifdef DEBUG
     time_t now;
     time(&now);
     struct tm *local = localtime(&now);
@@ -29,5 +28,4 @@ void logger(const char *format, ...) {
     va_end(args);
 
     printf("\n");
-#endif
 }

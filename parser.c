@@ -23,10 +23,10 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
     logger("Current timestamp: %lu", current_time);
 
     #ifndef DEBUG
-    if(current_time - timestamp <= 5) {
+    if(abs(current_time - timestamp) <= 5) {
         logger("The timestamp is within allowed time difference of 5 seconds.");
     } else {
-        logger("Error! Timestamp difference is too big (%d seconds.)! Aborting.", current_time-timestamp);
+        logger("Error! Timestamp difference is too big (%d seconds.)! Aborting.", abs(current_time - timestamp));
         struct parse_result err;
         err.result = 1;
         return err;
