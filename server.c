@@ -3,7 +3,9 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include "server.h"
+#include "gpio.h"
 #include "parser.h"
+#include "utils.h"
 
 int start_server(int pi, int port) {
     int server_fd, client_fd;
@@ -49,7 +51,11 @@ int start_server(int pi, int port) {
         } else {
             logger("Received: %d bytes.\n", bytes_received);
             send(client_fd, "Message received", 17, 0);
-            parse_message(buffer);
+            struct parse_result result = parse_message(buffer);
+            if(result.result == 0) {
+                logger("Successfully parsed and checked packet, processing.");
+                set_color(pi, result.RED, result.BLUE, result.GREEN);
+            }
         }
 
         close(client_fd);

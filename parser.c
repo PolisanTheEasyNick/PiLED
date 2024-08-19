@@ -6,7 +6,7 @@
 #include <time.h>
 #include <openssl/hmac.h>
 
-void parse_message(unsigned char buffer[BUFFER_SIZE]) {
+struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
     logger("Received buffer: ");
     for(int i = 0; i < BUFFER_SIZE; i++) {
         printf("%x ", buffer[i]);
@@ -21,12 +21,17 @@ void parse_message(unsigned char buffer[BUFFER_SIZE]) {
 
     uint64_t current_time = time(NULL); //must be 64-bit on modern systems
     logger("Current timestamp: %lu", current_time);
+
+    #ifndef DEBUG
     if(current_time - timestamp <= 5) {
         logger("The timestamp is within allowed time difference of 5 seconds.");
     } else {
         logger("Error! Timestamp difference is too big (%d seconds.)! Aborting.", current_time-timestamp);
-        //return;
+        struct parse_result err;
+        err.result = 1;
+        return err;
     }
+    #endif
 
     //next 8 bytes -> nonce
     uint64_t nonce = 0;
@@ -85,13 +90,24 @@ void parse_message(unsigned char buffer[BUFFER_SIZE]) {
         printf("%x ", GENERATED_HMAC[i]);
     }
     printf("\n");
+
+    #ifndef DEBUG
     logger("Comparing HMAC's...");
     for(unsigned short i = 0; i < 32; i++) {
         if(GENERATED_HMAC[i] != PARSED_HMAC[i]) {
             logger("HMACs are NOT the sa-*kabooom*");
-            return;
+            struct parse_result err;
+            err.result = 1;
+            return err;
         }
     }
-    logger("HMACs are same, nothing exploded!");
+    #endif
 
+    logger("HMACs are same, nothing exploded!");
+    struct parse_result res;
+    res.result = 0;
+    res.RED = RED;
+    res.GREEN = GREEN;
+    res.BLUE = BLUE;
+    return res;
 }
