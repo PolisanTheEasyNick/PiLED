@@ -54,7 +54,20 @@ int start_server(int pi, int port) {
             struct parse_result result = parse_message(buffer);
             if(result.result == 0) {
                 logger("Successfully parsed and checked packet, processing.");
-                set_color(pi, result.RED, result.GREEN, result.BLUE);
+                switch(result.version) {
+                    case 2: {
+                        logger("v2, setting with duration");
+                        set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
+                        break;
+                    }
+                    case 1:
+                    default: {
+                        logger("Setting without duration");
+                        set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, 0);
+                        break;
+                    }
+                }
+                
             }
         }
 

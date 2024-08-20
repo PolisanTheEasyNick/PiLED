@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#define BUFFER_SIZE 52 //ver 1.0
+#define BUFFER_SIZE 53 //ver 2
 #define SHARED_SECRET "SHARED_KEY"
 #define RED_PIN 17
 #define GREEN_PIN 22

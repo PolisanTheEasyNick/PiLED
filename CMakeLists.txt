@@ -4,6 +4,8 @@ project(led-backlight LANGUAGES C)
 
 include(pigpio/util/Findpigpio.cmake)
 
+#add_definitions(-DDEBUG) #DANGEROUS! IT WILL SKIP SECURITY CHECKS
+
 add_executable(led-backlight main.c
     server.h
     server.c

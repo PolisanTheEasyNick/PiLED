@@ -4,21 +4,22 @@ This project used for installing on Raspberry Pi.
 To GPIO pins connected LED strip.  
 This program opens TCP server on port 3384 and waits for packets, created in this protocol:
 
-LED PROTOCOL v1.0
-Simply contains HEADER + HMAC-SHA-256 + PAYLOAD  
+LED PROTOCOL v2
+Simply contains `HEADER` + `HMAC-SHA-256` + `PAYLOAD`
+Currently max buffer size: 8+8+1+32+1+1+1+1 = 53 bytes.
 Note that config lines are hardcoded into `utils.h`
 
 ## HEADER Structure
 ```
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                                        HEADER                                     |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+   
-|timestamp: 64-bit signed integer; 8 bytes                                          |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+   
-|nonce:     64-bit signed integer, random; 8 byte value                             |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+   
-|version:   8-bit signed int, 1 byte version of protocol. ex. 0001 for version 1.0  |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+ 
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+|                            HEADER                         |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+ 
+|timestamp: 64-bit signed integer; 8 bytes                  |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+  
+|nonce:     64-bit signed integer, random; 8 byte value     |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+   
+|version:   8-bit signed int, 1 byte version of protocol.   |
++--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 ```  
 
 ## HMAC-SHA-256 (32 bytes)
@@ -36,8 +37,11 @@ HMAC(SHA-256, shared_secret, header + payload)
 +--+--+--+--+--+--+--+--+--+-+
 |BLUE color:  8 bits, 1 byte |
 +--+--+--+--+--+--+--+--+--+-+
+|Duration:    8 bits, 1 byte |
++--+--+--+--+--+--+--+--+--+-+
 ```
-Currently max buffer size: 8+8+1+32+1+1+1 = 52 bytes.
+Duration contains time in seconds of duration of animation of changing color from current to asked.
+
 ## Client Side Workflow
 1. Generate Timestamp and Nonce  
     * Timestamp: Use Unix time (seconds since January 1, 1970). (64-bit)  
