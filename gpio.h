@@ -11,8 +11,6 @@ struct Color {
     uint8_t BLUE;
 };
 
-static struct Color last_color = {0, 0, 0};
-
 void set_color(int pi, struct Color color, uint8_t duration);
 
 #endif //GPIO_H
