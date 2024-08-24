@@ -2,6 +2,13 @@
 
 This project used for installing on Raspberry Pi.  
 To GPIO pins connected LED strip.  
+TODO:
+- [x] Basic color change
+- [x] Protocol parser with all needed checks
+- [x] Setting up pigpio and setting color to pins
+- [] Use config file
+- [] Some basic animations support
+- [] OpenRGB SDK support (connect to server and set colors too)  
 This program opens TCP server on port 3384 and waits for packets, created in this protocol:
 
 LED PROTOCOL v2
