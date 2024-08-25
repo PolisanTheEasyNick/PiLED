@@ -1,6 +1,5 @@
 #ifndef GPIO_H
 #define GPIO_H
-#include "utils.h"
 #include <stdint.h>
 
 #define TRANSITION_STEPS 100

@@ -1,5 +1,7 @@
 #include "parser.h"
+#include "globals.h"
 #include "utils.h"
+#include <libconfig.h>
 #include <openssl/hmac.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -122,4 +124,70 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
     res.BLUE = BLUE;
     res.duration = duration;
     return res;
+}
+
+void parse_config(const char *config_file) {
+    config_t cfg;
+    config_init(&cfg);
+
+    if (!config_read_file(&cfg, config_file)) {
+        fprintf(stderr, "Error reading config file: %s\n", config_error_text(&cfg));
+        config_destroy(&cfg);
+        exit(EXIT_FAILURE);
+    }
+    logger("Opened config file");
+
+    const char *addr;
+    if (!config_lookup_string(&cfg, "PI_ADDR", &addr)) {
+        fprintf(stderr, "Missing PI_ADDR in config file, using default (NULL)\n");
+        PI_ADDR = NULL;
+    } else {
+        PI_ADDR = malloc(strlen(addr));
+        strncpy(PI_ADDR, addr, strlen(addr));
+        PI_ADDR[strlen(addr)] = 0;
+    }
+
+    const char *port;
+    if (!config_lookup_string(&cfg, "PI_PORT", &port)) {
+        fprintf(stderr, "Missing PI_PORT in config file, using default (8888)\n");
+        PI_PORT = NULL;
+    } else {
+        PI_PORT = malloc(strlen(port));
+        strncpy(PI_PORT, port, strlen(port));
+        PI_PORT[strlen(port)] = 0;
+    }
+
+    if (!config_lookup_int(&cfg, "RED_PIN", &RED_PIN)) {
+        fprintf(stderr, "Missing RED_PIN in config file!\n");
+        config_destroy(&cfg);
+        exit(EXIT_FAILURE);
+    }
+    RED_PIN = RED_PIN;
+
+    if (!config_lookup_int(&cfg, "GREEN_PIN", &GREEN_PIN)) {
+        fprintf(stderr, "Missing GREEN_PIN in config file!\n");
+        config_destroy(&cfg);
+        exit(EXIT_FAILURE);
+    }
+    GREEN_PIN = GREEN_PIN;
+
+    if (!config_lookup_int(&cfg, "BLUE_PIN", &BLUE_PIN)) {
+        fprintf(stderr, "Missing BLUE_PIN in config file!\n");
+        config_destroy(&cfg);
+        exit(EXIT_FAILURE);
+    }
+    BLUE_PIN = BLUE_PIN;
+
+    const char *secret;
+    if (!config_lookup_string(&cfg, "SHARED_SECRET", &secret)) {
+        fprintf(stderr, "Missing SHARED_SECRET in config file\n");
+        SHARED_SECRET = NULL;
+    }
+    SHARED_SECRET = malloc(strlen(secret));
+    strncpy(SHARED_SECRET, secret, strlen(secret));
+    SHARED_SECRET[strlen(secret)] = 0;
+
+    logger("Passed config:\nRaspberry Pi address: %s\nPort: %s\nRed pin: %d\nGreen pin: %d\nBlue pin: %d\nShared "
+           "secret: %s",
+           PI_ADDR, PI_PORT, RED_PIN, GREEN_PIN, BLUE_PIN, SHARED_SECRET);
 }

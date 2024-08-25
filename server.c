@@ -3,15 +3,20 @@
 #include "parser.h"
 #include "utils.h"
 #include <arpa/inet.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+volatile sig_atomic_t stop_server = 0;
 
 int start_server(int pi, int port) {
     int server_fd, client_fd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     unsigned char buffer[BUFFER_SIZE];
+    struct timeval timeout;
+    fd_set read_fds;
 
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
@@ -38,39 +43,54 @@ int start_server(int pi, int port) {
 
     logger("Server listening on port %d\n", port);
 
-    while (1) {
-        client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-        if (client_fd < 0) {
-            perror("accept");
-            continue;
+    while (!stop_server) {
+        FD_ZERO(&read_fds);
+        FD_SET(server_fd, &read_fds);
+
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        int activity = select(server_fd + 1, &read_fds, NULL, NULL, &timeout);
+
+        if (activity < 0 && !stop_server) {
+            perror("select");
+            break;
         }
 
-        int bytes_received = recv(client_fd, buffer, BUFFER_SIZE, 0);
-        if (bytes_received < 0) {
-            perror("recv");
-        } else {
-            logger("Received: %d bytes.\n", bytes_received);
-            send(client_fd, "Message received", 17, 0);
-            struct parse_result result = parse_message(buffer);
-            if (result.result == 0) {
-                logger("Successfully parsed and checked packet, processing.");
-                switch (result.version) {
-                case 2: {
-                    logger("v2, setting with duration");
-                    set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
-                    break;
-                }
-                case 1:
-                default: {
-                    logger("Setting without duration");
-                    set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, 0);
-                    break;
-                }
+        if (activity > 0 && FD_ISSET(server_fd, &read_fds)) {
+            client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
+            if (client_fd < 0) {
+                perror("accept");
+                continue;
+            }
+
+            int bytes_received = recv(client_fd, buffer, BUFFER_SIZE, 0);
+            if (bytes_received < 0) {
+                perror("recv");
+            } else {
+                logger("Received: %d bytes.\n", bytes_received);
+                send(client_fd, "Message received", 17, 0);
+                struct parse_result result = parse_message(buffer);
+                if (result.result == 0) {
+                    logger("Successfully parsed and checked packet, processing.");
+                    switch (result.version) {
+                    case 2: {
+                        logger("v2, setting with duration");
+                        set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
+                        break;
+                    }
+                    case 1:
+                    default: {
+                        logger("Setting without duration");
+                        set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, 0);
+                        break;
+                    }
+                    }
                 }
             }
-        }
 
-        close(client_fd);
+            close(client_fd);
+        }
     }
 
     close(server_fd);

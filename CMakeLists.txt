@@ -5,7 +5,6 @@ project(led-backlight LANGUAGES C)
 include(pigpio/util/Findpigpio.cmake)
 
 #add_definitions(-DDEBUG) #DANGEROUS! IT WILL SKIP SECURITY CHECKS
-
 add_executable(led-backlight main.c
   server.h
   server.c
@@ -14,11 +13,14 @@ add_executable(led-backlight main.c
   parser.h
   parser.c
   gpio.h
-  gpio.c)
+  gpio.c
+  globals.h
+  globals.c)
 
 
 find_package(OpenSSL REQUIRED)
 target_link_libraries(led-backlight OpenSSL::SSL ${pigpiod_if2_LIBRARY})
+target_link_libraries(led-backlight config)
 
 find_package(pigpio QUIET)
 if(NOT pigpio_FOUND)

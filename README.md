@@ -1,53 +1,51 @@
 # led-server
 
 This project used for installing on Raspberry Pi.  
-To GPIO pins connected LED strip.  
-TODO:
+LED Strip is connected to Raspberry Pi GPIO pins.  
+This program opens TCP server on port 3384 and waits for plain TCP packets, created as described here:
+
+## TODO:
 - [x] Basic color change
 - [x] Protocol parser with all needed checks
 - [x] Setting up pigpio and setting color to pins
-- [ ] Use config file
-- [ ] Some basic animations support
+- [x] Use config file
+- [ ] Some basic animations support  
+- [ ] Get current color support in protocol
 - [ ] OpenRGB SDK support (connect to server and set colors too)  
-This program opens TCP server on port 3384 and waits for packets, created in this protocol:
+
+
 
 LED PROTOCOL v2
-Simply contains `HEADER` + `HMAC-SHA-256` + `PAYLOAD`
+Simply contains `HEADER` + `HMAC-SHA-256` + `PAYLOAD`  
 Currently max buffer size: 8+8+1+32+1+1+1+1 = 53 bytes.
-Note that config lines are hardcoded into `utils.h`
+
+## Version History
+| Version    | Description                                    |
+| :--------: | ---------------------------------------------- |
+| v1, 0x1    | Initial release, support of changing color     |
+| v2, 0x2    | Added plain changing from current color to new |
+
+
 
 ## HEADER Structure
-```
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-|                            HEADER                         |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+ 
-|timestamp: 64-bit signed integer; 8 bytes                  |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+  
-|nonce:     64-bit signed integer, random; 8 byte value     |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+   
-|version:   8-bit signed int, 1 byte version of protocol.   |
-+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-```  
+| Name      | Size                    | Description               |
+| :-----:   | :---------------------: | ------------------------- |
+| timestamp | 8 bytes, 64 bit, signed | Timestamp of current time |
+| nonce     | 8 bytes, 64 bit, signed | Random data               |
+| version   | 1 byte, 8 bit, signed   | Used version of protocol  |
+
 
 ## HMAC-SHA-256 (32 bytes)
-Must be generated with SHA-256 algorithm with using shared_secret which writed in both client and server and data must be used header+payload:
-HMAC(SHA-256, shared_secret, header + payload)
+Must be generated with SHA-256 algorithm with using `shared_secret` which writed in both client and server and `data` must be used `header+payload`:
+`HMAC(SHA-256, shared_secret, header + payload)`
 
 ## PAYLOAD Structure
-```
-+--+--+--+--+--+--+--+--+--+-+
-|          PAYLOAD           |
-+--+--+--+--+--+--+--+--+--+-+
-|RED color:   8 bits, 1 byte |
-+--+--+--+--+--+--+--+--+--+-+
-|GREEN color: 8 bits, 1 byte |
-+--+--+--+--+--+--+--+--+--+-+
-|BLUE color:  8 bits, 1 byte |
-+--+--+--+--+--+--+--+--+--+-+
-|Duration:    8 bits, 1 byte |
-+--+--+--+--+--+--+--+--+--+-+
-```
-Duration contains time in seconds of duration of animation of changing color from current to asked.
+| Name        | Size                    | Description                                               |
+| :-----:     | :---------------------: | --------------------------------------------------------- |
+| RED color   | 1 byte, 8 bits, signed  | RED color value                                           |
+| GREEN color | 1 byte, 8 bits, signed  | GREEN color value                                         |
+| BLUE color  | 1 byte, 8 bits, signed  | BLUE color value                                          |
+| Duration    | 1 byte, 8 bits, signed  | Duration in seconds of changing color from current to new |
 
 ## Client Side Workflow
 1. Generate Timestamp and Nonce  

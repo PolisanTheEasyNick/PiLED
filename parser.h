@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 #include "utils.h"
+#include <libconfig.h>
 #include <stdint.h>
 
 struct parse_result {
@@ -13,5 +14,6 @@ struct parse_result {
 };
 
 struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]);
+void parse_config(const char *config_file);
 
 #endif // PARSER_H

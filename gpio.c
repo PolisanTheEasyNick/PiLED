@@ -1,4 +1,5 @@
 #include "gpio.h"
+#include "globals.h"
 #include "pigpiod_if2.h"
 #include "utils.h"
 #include <stdint.h>
