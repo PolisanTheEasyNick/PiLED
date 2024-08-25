@@ -13,4 +13,4 @@ struct Color {
 
 void set_color(int pi, struct Color color, uint8_t duration);
 
-#endif //GPIO_H
+#endif // GPIO_H

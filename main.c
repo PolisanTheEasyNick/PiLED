@@ -1,11 +1,10 @@
-#include <stdio.h>
 #include "gpio.h"
-#include "server.h"
 #include "pigpiod_if2.h"
+#include "server.h"
 #include "utils.h"
+#include <stdio.h>
 
-int main()
-{
+int main() {
     int pi = pigpio_start(NULL, NULL);
     if (pi < 0) {
         fprintf(stderr, "Pigpio initialization failed.\n");

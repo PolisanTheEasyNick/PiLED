@@ -7,14 +7,14 @@ include(pigpio/util/Findpigpio.cmake)
 #add_definitions(-DDEBUG) #DANGEROUS! IT WILL SKIP SECURITY CHECKS
 
 add_executable(led-backlight main.c
-    server.h
-    server.c
-    utils.h
-    utils.c
-    parser.h
-    parser.c
-    gpio.h
-    gpio.c)
+  server.h
+  server.c
+  utils.h
+  utils.c
+  parser.h
+  parser.c
+  gpio.h
+  gpio.c)
 
 
 find_package(OpenSSL REQUIRED)
@@ -29,6 +29,6 @@ endif()
 
 include(GNUInstallDirs)
 install(TARGETS led-backlight
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

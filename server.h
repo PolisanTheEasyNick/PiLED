@@ -3,4 +3,4 @@
 
 int start_server(int pi, int port);
 
-#endif //SERVER_H
+#endif // SERVER_H
