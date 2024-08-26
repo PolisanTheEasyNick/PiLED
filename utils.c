@@ -2,9 +2,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef DEBUG
 #include <time.h>
-#endif
 
 void handle_error(const char *msg) {
     perror(msg);
@@ -12,7 +10,6 @@ void handle_error(const char *msg) {
 }
 
 void logger(const char *format, ...) {
-#ifdef DEBUG
     time_t now;
     time(&now);
     struct tm *local = localtime(&now);
@@ -26,5 +23,4 @@ void logger(const char *format, ...) {
     va_end(args);
 
     printf("\n");
-#endif
 }

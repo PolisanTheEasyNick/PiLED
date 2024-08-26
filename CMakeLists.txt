@@ -17,10 +17,9 @@ add_executable(led-backlight main.c
   globals.h
   globals.c)
 
-
 find_package(OpenSSL REQUIRED)
-target_link_libraries(led-backlight OpenSSL::SSL ${pigpiod_if2_LIBRARY})
-target_link_libraries(led-backlight config)
+find_package(Threads REQUIRED)
+target_link_libraries(led-backlight OpenSSL::SSL ${pigpiod_if2_LIBRARY} config ${CMAKE_THREAD_LIBS_INIT})
 
 find_package(pigpio QUIET)
 if(NOT pigpio_FOUND)

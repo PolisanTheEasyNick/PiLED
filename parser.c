@@ -29,7 +29,7 @@ struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, 
 
     logger("parse_message: Color: R: 0x%x, G: 0x%x, B: 0x%x", RED, GREEN, BLUE);
     const int HMAC_DATA_SIZE = sizes.header_size + sizes.payload_size;
-    logger("parse_message: hmac data size: %d; payload size: %d", HMAC_DATA_SIZE, sizes.payload_size);
+    logger("parse_message: data for hmac size: %d; payload size: %d", HMAC_DATA_SIZE, sizes.payload_size);
     unsigned char HMAC_DATA[HMAC_DATA_SIZE];
     memset(HMAC_DATA, 0, HMAC_DATA_SIZE);
     memcpy(HMAC_DATA, buffer, sizes.header_size);                                       // HEADER
@@ -140,8 +140,8 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
 
     // HMAC
     unsigned char PARSED_HMAC[32];
-    memcpy(PARSED_HMAC, &buffer[sizes.header_size - 1], 32);
-    logger("parse_message: HMAC:");
+    memcpy(PARSED_HMAC, &buffer[sizes.header_size], 32);
+    logger("parse_message: Parsed HMAC from buffer:");
     for (unsigned short i = 0; i < 32; i++) {
         printf("%x ", PARSED_HMAC[i]);
     }
