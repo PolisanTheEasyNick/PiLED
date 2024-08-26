@@ -1,6 +1,6 @@
 #ifndef PARSER_H
 #define PARSER_H
-#include "utils.h"
+#include "globals.h"
 #include <libconfig.h>
 #include <stdint.h>
 
@@ -11,9 +11,16 @@ struct parse_result {
     uint8_t GREEN;
     uint8_t BLUE;
     uint8_t duration;
+    uint8_t OP; // OPerational code
+};
+
+struct section_sizes {
+    unsigned short header_size;
+    unsigned short payload_size;
 };
 
 struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]);
 void parse_config(const char *config_file);
+struct section_sizes get_section_sizes(uint8_t version);
 
 #endif // PARSER_H

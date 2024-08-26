@@ -1,11 +1,13 @@
 #include "server.h"
 #include "gpio.h"
 #include "parser.h"
+#include "pigpio/pigpiod_if2.h"
 #include "utils.h"
 #include <arpa/inet.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 volatile sig_atomic_t stop_server = 0;
@@ -69,11 +71,42 @@ int start_server(int pi, int port) {
                 perror("recv");
             } else {
                 logger("Received: %d bytes.\n", bytes_received);
-                send(client_fd, "Message received", 17, 0);
                 struct parse_result result = parse_message(buffer);
                 if (result.result == 0) {
-                    logger("Successfully parsed and checked packet, processing.");
+                    logger("Successfully parsed and checked packet, processing. v%d", result.version);
                     switch (result.version) {
+                    case 3: {
+                        logger("v3, OP is: %d", result.OP);
+                        switch (result.OP) {
+                        case 0: { // SET COLOR
+                            set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
+                            break;
+                        }
+                        case 1: {                            // GET COLOR
+                            unsigned char current_color[11]; // timestamp (8 bytes) + 3 bytes of colors RGB
+                            uint64_t current_time = time(NULL);
+                            struct Color last_color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
+                                                       get_PWM_dutycycle(pi, BLUE_PIN)};
+                            logger("Current color is: 0x%x 0x%x 0x%x", last_color.RED, last_color.GREEN,
+                                   last_color.BLUE);
+                            memset(current_color, 0, 11);
+                            memcpy(current_color, (unsigned char *)&current_time, 8);
+                            current_color[8] = last_color.RED;
+                            current_color[9] = last_color.GREEN;
+                            current_color[10] = last_color.BLUE;
+                            logger("Parsed color, sending this package:");
+#ifdef DEBUG
+                            for (short i = 0; i < 11; i++) {
+                                printf("%x ", current_color[i]);
+                            }
+                            printf("\n");
+#endif
+                            send(client_fd, current_color, 11, 0);
+                            break;
+                        }
+                        }
+                        break;
+                    }
                     case 2: {
                         logger("v2, setting with duration");
                         set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
@@ -81,7 +114,7 @@ int start_server(int pi, int port) {
                     }
                     case 1:
                     default: {
-                        logger("Setting without duration");
+                        logger("v1, setting without duration");
                         set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, 0);
                         break;
                     }

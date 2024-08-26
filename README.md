@@ -15,29 +15,38 @@ This program opens TCP server on port 3384 and waits for plain TCP packets, crea
 
 
 
-LED PROTOCOL v2
+LED PROTOCOL v3
 Simply contains `HEADER` + `HMAC-SHA-256` + `PAYLOAD`  
-Currently max buffer size: 8+8+1+32+1+1+1+1 = 53 bytes.
+Currently max buffer size: 8+8+1+1+32+1+1+1+1 = 54 bytes.
 
 ## Version History
 | Version    | Description                                    |
 | :--------: | ---------------------------------------------- |
 | v1, 0x1    | Initial release, support of changing color     |
 | v2, 0x2    | Added plain changing from current color to new |
+| v3, 0x3    | Added support of getting current color         |
 
 
 
 ## HEADER Structure
-| Name      | Size                    | Description               |
-| :-----:   | :---------------------: | ------------------------- |
-| timestamp | 8 bytes, 64 bit, signed | Timestamp of current time |
-| nonce     | 8 bytes, 64 bit, signed | Random data               |
-| version   | 1 byte, 8 bit, signed   | Used version of protocol  |
+| Name      | Size            | Version | Description              |
+| :-------: | :-------------: | :-----: | ------------------------ |
+| timestamp | 8 bytes, signed |    0    |Timestamp of current time |
+| nonce     | 8 bytes, signed |    0    |Random data               |
+| version   | 1 byte, signed  |    0    |Used version of protocol  |
+| OP        | 1 byte, signed  |    3    |Operational code          |
 
 
 ## HMAC-SHA-256 (32 bytes)
 Must be generated with SHA-256 algorithm with using `shared_secret` which writed in both client and server and `data` must be used `header+payload`:
 `HMAC(SHA-256, shared_secret, header + payload)`
+
+## Operational Codes
+| Value | Name                                            | Description                           |
+| :---- | :----------------------------------------------:| ------------------------------------- |
+| 0     | [LED_SET_COLOR](#led_set_color)                 | Set RGB color, described in PAYLOAD   |
+| 1     | [LED_GET_CURRENT_COLOR](#led_get_current_color) | Request led-server current LEDs color |
+
 
 ## PAYLOAD Structure
 | Name        | Size                    | Description                                               |
@@ -46,6 +55,17 @@ Must be generated with SHA-256 algorithm with using `shared_secret` which writed
 | GREEN color | 1 byte, 8 bits, signed  | GREEN color value                                         |
 | BLUE color  | 1 byte, 8 bits, signed  | BLUE color value                                          |
 | Duration    | 1 byte, 8 bits, signed  | Duration in seconds of changing color from current to new |
+
+## Packet-Specific Documentation
+## LED_GET_CURRENT_COLOR
+Request size: 50 bytes (`HEADER` + `HMAC` without `PAYLOAD`)  
+Response size: 11 bytes  
+The response contains `timestamp` when response package created (8 bytes) and RGB values (3 bytes summary respectively).  
+
+## LED_SET_COLOR
+Request size: 54 bytes (`HEADER` + `HMAC` + `PAYLOAD`)  
+Response size: 0 bytes (no response)
+Sets up RGB color, defined in `PAYLOAD` to GPIO pins.
 
 ## Client Side Workflow
 1. Generate Timestamp and Nonce  
