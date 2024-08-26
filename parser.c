@@ -10,7 +10,7 @@
 
 struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, unsigned char *PARSED_HMAC) {
     // PAYLOAD
-    uint8_t RED = 0, GREEN = 0, BLUE = 0, duration = 0;
+    uint8_t RED = 0, GREEN = 0, BLUE = 0, duration = 0, speed = 0;
 
     struct section_sizes sizes = get_section_sizes(version);
     uint8_t payload_offset = sizes.header_size + 32;
@@ -22,6 +22,11 @@ struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, 
         duration |= buffer[payload_offset + 3] & 0xFF;
         logger("parse_message: Version: %d, got duration: %d", version, duration);
     }
+    if (version >= 4) {
+        speed |= buffer[payload_offset + 4] & 0xFF;
+        logger("parse_message: Version: %d, got speed: %d", version, speed);
+    }
+
     logger("parse_message: Color: R: 0x%x, G: 0x%x, B: 0x%x", RED, GREEN, BLUE);
     const int HMAC_DATA_SIZE = sizes.header_size + sizes.payload_size;
     logger("parse_message: hmac data size: %d; payload size: %d", HMAC_DATA_SIZE, sizes.payload_size);
@@ -68,6 +73,7 @@ struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, 
     res.GREEN = GREEN;
     res.BLUE = BLUE;
     res.duration = duration;
+    res.speed = speed;
     return res;
 }
 
@@ -142,18 +148,30 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
     printf("\n");
     struct parse_result result;
     switch (OP) {
-    case 0: { // SET COLOR
+    case LED_SET_COLOR: { // SET COLOR
         logger("parse_message: Operational code is 0, setting color");
         result = parse_payload(buffer, version, PARSED_HMAC);
-        result.OP = 0;
+        result.OP = LED_SET_COLOR;
         break;
     };
-    case 1: { // GET COLOR
+    case LED_GET_CURRENT_COLOR: { // GET COLOR
         // TODO: HMAC check?? No point since get color request not sensible?
         logger("parse_message: OP code is 1, getting color");
         result.result = 0;
-        result.OP = 1;
+        result.OP = LED_GET_CURRENT_COLOR;
         result.version = 3; // minimal for this OP; change logic in future?
+        break;
+    }
+    case ANIM_SET_FADE: {
+        logger("parse_message: OP code is 2, starting animation");
+        result = parse_payload(buffer, version, PARSED_HMAC);
+        result.OP = ANIM_SET_FADE;
+        result.version = 4;
+        break;
+    }
+    default: {
+        logger("Unknown OP (%d), aborting!", OP);
+        result.result = 1;
         break;
     }
     }
@@ -244,6 +262,10 @@ struct section_sizes get_section_sizes(uint8_t version) {
     case 3: { // OP added
         result.header_size = 18;
         result.payload_size = 4;
+    }
+    case 4: { // Speed added to PAYLOAD
+        result.header_size = 18;
+        result.payload_size = 5;
     }
     }
     return result;

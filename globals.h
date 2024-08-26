@@ -8,12 +8,13 @@ extern int RED_PIN;
 extern int GREEN_PIN;
 extern int BLUE_PIN;
 
-#define BUFFER_SIZE 54    // ver 3
-#define HEADER_SIZE 18    // ver 3
-#define PAYLOAD_SIZE 4    // ver 3
-#define PAYLOAD_OFFSET 50 // ver 3, offset to start of PAYLOAD bytes in BUFFER
+#define BUFFER_SIZE 55    // ver 4
+#define HEADER_SIZE 18    // ver 4
+#define PAYLOAD_SIZE 5    // ver 4
+#define PAYLOAD_OFFSET 50 // ver 4, offset to start of PAYLOAD bytes in BUFFER
 
 #define LED_SET_COLOR 0
 #define LED_GET_CURRENT_COLOR 1
+#define ANIM_SET_FADE 2
 
 #endif // GLOBALS_H

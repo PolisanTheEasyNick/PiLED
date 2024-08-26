@@ -11,7 +11,8 @@ struct parse_result {
     uint8_t GREEN;
     uint8_t BLUE;
     uint8_t duration;
-    uint8_t OP; // OPerational code
+    uint8_t OP;    // OPerational code
+    uint8_t speed; // for animations
 };
 
 struct section_sizes {

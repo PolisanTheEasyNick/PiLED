@@ -1,11 +1,14 @@
 #include "server.h"
+#include "globals.h"
 #include "gpio.h"
 #include "parser.h"
 #include "pigpio/pigpiod_if2.h"
 #include "utils.h"
 #include <arpa/inet.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
@@ -19,6 +22,7 @@ int start_server(int pi, int port) {
     unsigned char buffer[BUFFER_SIZE];
     struct timeval timeout;
     fd_set read_fds;
+    pthread_t thread_id;
 
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
@@ -72,17 +76,20 @@ int start_server(int pi, int port) {
             } else {
                 logger("Received: %d bytes.\n", bytes_received);
                 struct parse_result result = parse_message(buffer);
+                logger("Result of parsing: %d", result.result);
                 if (result.result == 0) {
                     logger("Successfully parsed and checked packet, processing. v%d", result.version);
                     switch (result.version) {
+                    case 4:
                     case 3: {
                         logger("v3, OP is: %d", result.OP);
                         switch (result.OP) {
-                        case 0: { // SET COLOR
-                            set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
+                        case LED_SET_COLOR: { // SET COLOR
+                            set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE},
+                                               result.duration);
                             break;
                         }
-                        case 1: {                            // GET COLOR
+                        case LED_GET_CURRENT_COLOR: {        // GET COLOR
                             unsigned char current_color[11]; // timestamp (8 bytes) + 3 bytes of colors RGB
                             uint64_t current_time = time(NULL);
                             struct Color last_color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
@@ -104,18 +111,41 @@ int start_server(int pi, int port) {
                             send(client_fd, current_color, 11, 0);
                             break;
                         }
+                        case ANIM_SET_FADE: {
+                            pthread_mutex_lock(&animation_mutex);
+                            if (is_animating) {
+                                is_animating = 0;
+                                pthread_join(fade_animation_thread, NULL);
+
+                                pthread_mutex_unlock(&animation_mutex);
+                            } else {
+                                pthread_mutex_unlock(&animation_mutex);
+                            }
+
+                            struct fade_animation_args *args = malloc(sizeof(struct fade_animation_args));
+                            args->pi = pi;
+                            args->speed = result.speed;
+
+                            if (pthread_create(&fade_animation_thread, NULL, start_fade_animation, (void *)args) != 0) {
+                                perror("Failed to create thread");
+                                free(args);
+                            } else {
+                                logger("Started fade animation thread!");
+                            }
+                            break;
+                        }
                         }
                         break;
                     }
                     case 2: {
                         logger("v2, setting with duration");
-                        set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
+                        set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
                         break;
                     }
                     case 1:
                     default: {
                         logger("v1, setting without duration");
-                        set_color(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, 0);
+                        set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, 0);
                         break;
                     }
                     }
