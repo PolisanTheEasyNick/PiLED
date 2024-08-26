@@ -11,7 +11,9 @@ This program opens TCP server on port 3384 and waits for plain TCP packets, crea
 - [x] Use config file
 - [ ] Some basic animations support  
 - [x] Get current color support in protocol
-- [ ] OpenRGB SDK support (connect to server and set colors too)  
+- [ ] OpenRGB SDK support (connect to server and set colors too)
+- [ ] Use config file from home directory
+- [ ] systemd service
 
 
 
@@ -97,3 +99,17 @@ Starts FADE animation. To `PAYLOAD` must be added `Speed` field as described at 
    * Compare the recomputed HMAC with the received HMAC. If they match, proceed; if not, reject the request.
 4. Process the Request
    * Process the color value from the payload.
+
+## Requirements
+* RPi with running `pigpiod`
+* `libssl-dev`
+* `libconfig`
+  
+## Building and Running
+* `git clone --recursive https://github.com/PolisanTheEasyNick/led-server`
+* `cd led-server`
+* `mkdir build`
+* `cd build`
+* `cmake ..`
+* `make`
+* `./led-server`
