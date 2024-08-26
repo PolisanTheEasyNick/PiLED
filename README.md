@@ -10,7 +10,7 @@ This program opens TCP server on port 3384 and waits for plain TCP packets, crea
 - [x] Setting up pigpio and setting color to pins
 - [x] Use config file
 - [ ] Some basic animations support  
-- [ ] Get current color support in protocol
+- [x] Get current color support in protocol
 - [ ] OpenRGB SDK support (connect to server and set colors too)  
 
 
@@ -31,9 +31,9 @@ Currently max buffer size: 8+8+1+1+32+1+1+1+1 = 54 bytes.
 ## HEADER Structure
 | Name      | Size            | Version | Description              |
 | :-------: | :-------------: | :-----: | ------------------------ |
-| timestamp | 8 bytes, signed |    0    |Timestamp of current time |
-| nonce     | 8 bytes, signed |    0    |Random data               |
-| version   | 1 byte, signed  |    0    |Used version of protocol  |
+| timestamp | 8 bytes, signed |    1    |Timestamp of current time |
+| nonce     | 8 bytes, signed |    1    |Random data               |
+| version   | 1 byte, signed  |    1    |Used version of protocol  |
 | OP        | 1 byte, signed  |    3    |Operational code          |
 
 
@@ -49,12 +49,12 @@ Must be generated with SHA-256 algorithm with using `shared_secret` which writed
 
 
 ## PAYLOAD Structure
-| Name        | Size                    | Description                                               |
-| :-----:     | :---------------------: | --------------------------------------------------------- |
-| RED color   | 1 byte, 8 bits, signed  | RED color value                                           |
-| GREEN color | 1 byte, 8 bits, signed  | GREEN color value                                         |
-| BLUE color  | 1 byte, 8 bits, signed  | BLUE color value                                          |
-| Duration    | 1 byte, 8 bits, signed  | Duration in seconds of changing color from current to new |
+| Name        | Size                    | Version | Description                                               |
+| :-----:     | :---------------------: | :-----: |--------------------------------------------------------- |
+| RED color   | 1 byte, 8 bits, signed  |    1    |RED color value                                           |
+| GREEN color | 1 byte, 8 bits, signed  |    1    |GREEN color value                                         |
+| BLUE color  | 1 byte, 8 bits, signed  |    1    |BLUE color value                                          |
+| Duration    | 1 byte, 8 bits, signed  |    2    |Duration in seconds of changing color from current to new |
 
 ## Packet-Specific Documentation
 ## LED_GET_CURRENT_COLOR
