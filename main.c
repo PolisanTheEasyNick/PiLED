@@ -1,4 +1,5 @@
 #include "globals.h"
+#include "gpio.h"
 #include "parser.h"
 #include "pigpiod_if2.h"
 #include "server.h"
@@ -26,6 +27,8 @@ int main() {
     set_mode(pi, RED_PIN, PI_OUTPUT);
     set_mode(pi, GREEN_PIN, PI_OUTPUT);
     set_mode(pi, BLUE_PIN, PI_OUTPUT);
+
+    set_color(pi, (struct Color){0, 0, 0});
 
     if (start_server(pi, 3384) < 0) {
         fprintf(stderr, "Failed to start server\n");
