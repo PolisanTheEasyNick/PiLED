@@ -11,9 +11,10 @@ This program opens TCP server on port 3384 and waits for plain TCP packets, crea
 - [x] Use config file
 - [ ] Some basic animations support  
 - [x] Get current color support in protocol
-- [ ] OpenRGB SDK support (connect to server and set colors too)
+- [ ] OpenRGB SDK support (connect to server, get devices, choose where to set and set colors on them too)
 - [ ] Use config file from home directory
 - [ ] systemd service
+- [ ] brightness support (?)
 
 
 
@@ -46,10 +47,10 @@ Must be generated with SHA-256 algorithm with using `shared_secret` which writed
 
 ## Operational Codes
 | Value | Name                                            | Description                           |
-| :---- | :---------------------------------------------: | ------------------------------------- |
+| :---: | :---------------------------------------------: | ------------------------------------- |
 | 0     | [LED_SET_COLOR](#led_set_color)                 | Set RGB color, described in PAYLOAD   |
 | 1     | [LED_GET_CURRENT_COLOR](#led_get_current_color) | Request led-server current LEDs color |
-| 2     | [ANIM_SET_FADE](#anim_set_fade) | Request led-server current LEDs color |
+| 2     | [ANIM_SET_FADE](#anim_set_fade)                 | Start FADE animation                  |
 
 
 ## PAYLOAD Structure

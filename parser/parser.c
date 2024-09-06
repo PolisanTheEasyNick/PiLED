@@ -1,6 +1,5 @@
 #include "parser.h"
-#include "globals.h"
-#include "utils.h"
+#include "../utils/utils.h"
 #include <libconfig.h>
 #include <openssl/hmac.h>
 #include <stdint.h>
@@ -163,7 +162,7 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
         break;
     }
     case ANIM_SET_FADE: {
-        logger("parse_message: OP code is 2, starting animation");
+        logger("parse_message: OP code is 2, starting FADE animation");
         result = parse_payload(buffer, version, PARSED_HMAC);
         result.OP = ANIM_SET_FADE;
         result.version = 4;

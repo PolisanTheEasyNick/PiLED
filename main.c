@@ -1,9 +1,9 @@
-#include "globals.h"
-#include "gpio.h"
-#include "parser.h"
+#include "globals/globals.h"
+#include "parser/parser.h"
 #include "pigpiod_if2.h"
-#include "server.h"
-#include "utils.h"
+#include "rgb/gpio.h"
+#include "server/server.h"
+#include "utils/utils.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>

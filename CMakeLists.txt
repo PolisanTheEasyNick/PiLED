@@ -6,16 +6,16 @@ include(pigpio/util/Findpigpio.cmake)
 
 #add_definitions(-DDEBUG) #DANGEROUS! IT WILL SKIP SECURITY CHECKS
 add_executable(led-backlight main.c
-  server.h
-  server.c
-  utils.h
-  utils.c
-  parser.h
-  parser.c
-  gpio.h
-  gpio.c
-  globals.h
-  globals.c)
+  server/server.h
+  server/server.c
+  utils/utils.h
+  utils/utils.c
+  parser/parser.h
+  parser/parser.c
+  rgb/gpio.h
+  rgb/gpio.c
+  globals/globals.h
+  globals/globals.c)
 
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)

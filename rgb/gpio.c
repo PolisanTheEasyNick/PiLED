@@ -1,8 +1,8 @@
 #include "gpio.h"
-#include "globals.h"
+#include "../globals/globals.h"
+#include "../server/server.h"
+#include "../utils/utils.h"
 #include "pigpiod_if2.h"
-#include "server.h"
-#include "utils.h"
 #include <stdint.h>
 #include <unistd.h>
 

@@ -1,9 +1,9 @@
 #include "server.h"
-#include "globals.h"
-#include "gpio.h"
-#include "parser.h"
-#include "pigpio/pigpiod_if2.h"
-#include "utils.h"
+#include "../globals/globals.h"
+#include "../parser/parser.h"
+#include "../pigpio/pigpiod_if2.h"
+#include "../rgb/gpio.h"
+#include "../utils/utils.h"
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>

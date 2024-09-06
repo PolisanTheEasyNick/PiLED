@@ -1,6 +1,6 @@
 #ifndef PARSER_H
 #define PARSER_H
-#include "globals.h"
+#include "../globals/globals.h"
 #include <libconfig.h>
 #include <stdint.h>
 
