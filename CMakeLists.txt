@@ -6,18 +6,19 @@ set(CMAKE_CXX_FLAGS "-Wno-dev")
 
 #add_definitions(-DDEBUG) #DANGEROUS! IT WILL SKIP SECURITY CHECKS
 
-include(pigpio/util/Findpigpio.cmake) #sets pigpio_INCLUDE_DIRS if found in system
+include(pigpio/util/Findpigpio.cmake) #sets pigpio_INCLUDE_DIRS and pigpiod_if2_LIBRARY if found in system
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(pigpio QUIET)
 
 if(NOT pigpio_FOUND)
-  message("pigpio not found in system! Building from submodule instead.")
-  add_subdirectory(pigpio)
+  message(WARNING "pigpio not found in system! Will be builded from submodule.")
+  add_subdirectory("${CMAKE_SOURCE_DIR}/pigpio")
   set(pigpio_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/pigpio")
-  set(PIGPIOD_IF2_LIBRARY "${CMAKE_BINARY_DIR}/pigpio/libpigpiod_if2.so")
-  include_directories(${pigpio_INCLUDE_DIRS})
+  set(pigpiod_if2_LIBRARY "${CMAKE_BINARY_DIR}/pigpio/libpigpiod_if2.so")
 endif()
+
+include_directories(${pigpio_INCLUDE_DIRS})
 
 add_executable(led-backlight
   main.c
@@ -28,10 +29,9 @@ add_executable(led-backlight
   globals/globals.h globals/globals.c
 )
 
-target_link_libraries(led-backlight OpenSSL::SSL config ${CMAKE_THREAD_LIBS_INIT})
-
+target_link_libraries(led-backlight OpenSSL::SSL config ${CMAKE_THREAD_LIBS_INIT} ${pigpiod_if2_LIBRARY})
 if(NOT pigpio_FOUND)
-  target_link_libraries(led-backlight ${PIGPIOD_IF2_LIBRARY})
+  add_dependencies(led-backlight pigpiod_if2) #is there cleaner way to make submodule build??? 
 endif()
 
 include(GNUInstallDirs)
