@@ -1,0 +1,40 @@
+name: C Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y libssl-dev libconfig-dev cmake
+
+    - name: Create build directory
+      run: mkdir -p build && cd build
+
+    - name: Configure project with CMake
+      run: |
+        cd build
+        cmake ..
+
+    - name: Build project
+      run: |
+        cd build
+        make
+
+    - name: Run tests
+      run: |
+        cd build
+        make test
