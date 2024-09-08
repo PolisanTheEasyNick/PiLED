@@ -168,8 +168,15 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
         result.version = 4;
         break;
     }
+    case ANIM_SET_PULSE: {
+        logger("parse_message: OP code is 3, setting PULSE animation");
+        result = parse_payload(buffer, version, PARSED_HMAC);
+        result.OP = ANIM_SET_PULSE;
+        result.version = 4;
+        break;
+    }
     default: {
-        logger("Unknown OP (%d), aborting!", OP);
+        logger("parse_message: Unknown OP (%d), aborting!", OP);
         result.result = 1;
         break;
     }

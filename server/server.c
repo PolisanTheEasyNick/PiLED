@@ -116,7 +116,7 @@ int start_server(int pi, int port) {
                             pthread_mutex_lock(&animation_mutex);
                             if (is_animating) {
                                 is_animating = 0;
-                                pthread_join(fade_animation_thread, NULL);
+                                pthread_join(animation_thread, NULL);
 
                                 pthread_mutex_unlock(&animation_mutex);
                             } else {
@@ -127,11 +127,34 @@ int start_server(int pi, int port) {
                             args->pi = pi;
                             args->speed = result.speed;
 
-                            if (pthread_create(&fade_animation_thread, NULL, start_fade_animation, (void *)args) != 0) {
+                            if (pthread_create(&animation_thread, NULL, start_fade_animation, (void *)args) != 0) {
                                 perror("Failed to create thread");
                                 free(args);
                             } else {
                                 logger("Started fade animation thread!");
+                            }
+                            break;
+                        }
+                        case ANIM_SET_PULSE: {
+                            pthread_mutex_lock(&animation_mutex);
+                            if (is_animating) {
+                                is_animating = 0;
+                                pthread_join(animation_thread, NULL);
+                                pthread_mutex_unlock(&animation_mutex);
+                            } else {
+                                pthread_mutex_unlock(&animation_mutex);
+                            }
+
+                            struct pulse_animation_args *args = malloc(sizeof(struct pulse_animation_args));
+                            args->pi = pi;
+                            args->color = (struct Color){result.RED, result.GREEN, result.BLUE};
+                            args->duration = result.duration;
+
+                            if (pthread_create(&animation_thread, NULL, start_pulse_animation, (void *)args) != 0) {
+                                perror("Failed to create thread");
+                                free(args);
+                            } else {
+                                logger("Started pulse animation thread!");
                             }
                             break;
                         }

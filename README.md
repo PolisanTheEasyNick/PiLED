@@ -9,12 +9,11 @@ This program opens TCP server on port 3384 and waits for plain TCP packets, crea
 - [x] Protocol parser with all needed checks
 - [x] Setting up pigpio and setting color to pins
 - [x] Use config file
-- [ ] Some basic animations support  
+- [x] Some basic animations support  
 - [x] Get current color support in protocol
 - [ ] OpenRGB SDK support (connect to server, get devices, choose where to set and set colors on them too)
 - [x] Use config file from home directory
 - [x] systemd service
-- [ ] brightness support (?)
 
 
 
@@ -33,12 +32,12 @@ Currently max buffer size: 8+8+1+1+32+1+1+1+1+1 = 55 bytes.
 
 
 ## HEADER Structure
-| Name      | Size              | Version | Description              |
-| :-------: | :---------------: | :-----: | ------------------------ |
-| timestamp | 8 bytes, unsigned |    1    |Timestamp of current time |
-| nonce     | 8 bytes, unsigned |    1    |Random data               |
-| version   | 1 byte, unsigned  |    1    |Used version of protocol  |
-| OP        | 1 byte, unsigned  |    3    |Operational code          |
+| Offset |   Name   | Size              | Version | Description              |
+| :----: | :------: | :---------------: | :-----: | ------------------------ |
+|  0x0   |timestamp | 8 bytes, unsigned |    1    |Timestamp of current time |
+|  0x8   |nonce     | 8 bytes, unsigned |    1    |Random data               |
+|  0x10  |version   | 1 byte, unsigned  |    1    |Used version of protocol  |
+|  0x11  |OP        | 1 byte, unsigned  |    3    |Operational code          |
 
 
 ## HMAC-SHA-256 (32 bytes)
@@ -51,16 +50,17 @@ Must be generated with SHA-256 algorithm with using `shared_secret` which writed
 | 0     | [LED_SET_COLOR](#led_set_color)                 | Set RGB color, described in PAYLOAD   |
 | 1     | [LED_GET_CURRENT_COLOR](#led_get_current_color) | Request led-server current LEDs color |
 | 2     | [ANIM_SET_FADE](#anim_set_fade)                 | Start FADE animation                  |
+| 3     | [ANIM_SET_PULSE](#anim_set_pulse)               | Start PULSE animation                 |
 
 
 ## PAYLOAD Structure
-| Name        | Size                      | Version | Description                                               |
-| :---------: | :-----------------------: | :-----: |---------------------------------------------------------- |
-| RED color   | 1 byte, 8 bits, unsigned  |    1    | RED color value                                           |
-| GREEN color | 1 byte, 8 bits, unsigned  |    1    | GREEN color value                                         |
-| BLUE color  | 1 byte, 8 bits, unsigned  |    1    | BLUE color value                                          |
-| Duration    | 1 byte, 8 bits, unsigned  |    2    | Duration in seconds of changing color from current to new |
-| Speed       | 1 byte, 8 bits, unsigned  |    4    | Speed of animation, from 0 to 255, conv. units            |
+| Offset | Name        | Size                      | Version | Description                                               |
+| :----: | :---------: | :-----------------------: | :-----: |---------------------------------------------------------- |
+|  0x32  | RED color   | 1 byte, 8 bits, unsigned  |    1    | RED color value                                           |
+|  0x33  | GREEN color | 1 byte, 8 bits, unsigned  |    1    | GREEN color value                                         |
+|  0x34  | BLUE color  | 1 byte, 8 bits, unsigned  |    1    | BLUE color value                                          |
+|  0x35  | Duration    | 1 byte, 8 bits, unsigned  |    2    | Duration in seconds of changing color from current to new |
+|  0x36  | Speed       | 1 byte, 8 bits, unsigned  |    4    | Speed of animation, from 0 to 255, conv. units            |
 
 ## Packet-Specific Documentation
 
@@ -79,6 +79,10 @@ Request size: 55 bytes (`HEADER` + `HMAC` + `PAYLOAD`)
 Response size: 0 bytes (no response)  
 Starts FADE animation. To `PAYLOAD` must be added `Speed` field as described at [PAYLOAD Structure](#payload-structure)
 
+## ANIM_SET_PULSE
+Request size: 55 bytes (`HEADER` + `HMAC` + `PAYLOAD`)
+Response size: 0 bytes (no response)
+Start PULSE animation. In `PAYLOAD` must be provided color fields and `Duration`.
 
 ## Client Side Workflow
 1. Generate Timestamp and Nonce  

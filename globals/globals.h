@@ -16,5 +16,6 @@ extern int BLUE_PIN;
 #define LED_SET_COLOR 0
 #define LED_GET_CURRENT_COLOR 1
 #define ANIM_SET_FADE 2
+#define ANIM_SET_PULSE 3
 
 #endif // GLOBALS_H

@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-pthread_t fade_animation_thread;
+pthread_t animation_thread;
 uint8_t is_animating = 0;
 pthread_mutex_t animation_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -19,12 +19,14 @@ void set_color(int pi, struct Color color) {
 
 void set_color_duration(int pi, struct Color color, uint8_t duration) {
     is_animating = 0; // stop animation if any
+    set_color_duration_anim(pi, color, duration);
+}
+
+void set_color_duration_anim(int pi, struct Color color, uint8_t duration) {
     logger("set_color_duration: Setting colors: %d %d %d on RPi #%d", color.RED, color.GREEN, color.BLUE, pi);
     logger("set_color_duration: duration is %d seconds.", duration);
     if (duration == 0) {
-        set_PWM_dutycycle(pi, RED_PIN, color.RED);
-        set_PWM_dutycycle(pi, GREEN_PIN, color.GREEN);
-        set_PWM_dutycycle(pi, BLUE_PIN, color.BLUE);
+        set_color(pi, color);
     } else {
         struct Color last_color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
                                    get_PWM_dutycycle(pi, BLUE_PIN)};
@@ -43,14 +45,10 @@ void set_color_duration(int pi, struct Color color, uint8_t duration) {
             short green = last_color.GREEN + (green_step_size * step) / TRANSITION_STEPS;
             short blue = last_color.BLUE + (blue_step_size * step) / TRANSITION_STEPS;
             logger("set_color_duration: setting color %d %d %d", red, green, blue);
-            set_PWM_dutycycle(pi, RED_PIN, red);
-            set_PWM_dutycycle(pi, GREEN_PIN, green);
-            set_PWM_dutycycle(pi, BLUE_PIN, blue);
+            set_color(pi, (struct Color){red, green, blue});
             usleep(step_duration_us);
         }
-        set_PWM_dutycycle(pi, RED_PIN, color.RED);
-        set_PWM_dutycycle(pi, GREEN_PIN, color.GREEN);
-        set_PWM_dutycycle(pi, BLUE_PIN, color.BLUE);
+        set_color(pi, color);
     }
 }
 
@@ -87,6 +85,24 @@ void *start_fade_animation(void *arg) {
         fade_in(pi, RED_PIN, speed);
         fade_out(pi, GREEN_PIN, speed);
         fade_out(pi, RED_PIN, speed);
+    }
+    pthread_exit(NULL);
+}
+
+void *start_pulse_animation(void *arg) {
+    is_animating = 1;
+    struct pulse_animation_args *args = (struct pulse_animation_args *)arg;
+    int pi = args->pi;
+    struct Color color = args->color;
+    uint8_t duration = args->duration;
+    set_color_duration_anim(pi, color, 3);
+    logger("Before while..... is_anim: %d, is stop server: %d", is_animating, stop_server);
+    while (is_animating && !stop_server) {
+        logger("Animating PULSE with duration %d...", duration);
+        set_color_duration_anim(pi, (struct Color){0, 0, 0}, duration);
+        usleep(1000);
+        set_color_duration_anim(pi, color, duration);
+        usleep(500);
     }
     pthread_exit(NULL);
 }
