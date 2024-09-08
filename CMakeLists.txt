@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(led-backlight LANGUAGES C)
+project(piled LANGUAGES C)
 
 set(CMAKE_CXX_FLAGS "-Wno-dev")
 
@@ -20,7 +20,7 @@ endif()
 
 include_directories(${pigpio_INCLUDE_DIRS})
 
-add_executable(led-backlight
+add_executable(piled
   main.c
   server/server.h server/server.c
   utils/utils.h utils/utils.c
@@ -29,13 +29,13 @@ add_executable(led-backlight
   globals/globals.h globals/globals.c
 )
 
-target_link_libraries(led-backlight OpenSSL::SSL config ${CMAKE_THREAD_LIBS_INIT} ${pigpiod_if2_LIBRARY})
+target_link_libraries(piled OpenSSL::SSL config ${CMAKE_THREAD_LIBS_INIT} ${pigpiod_if2_LIBRARY})
 if(NOT pigpio_FOUND)
-  add_dependencies(led-backlight pigpiod_if2) #is there cleaner way to make submodule build??? 
+  add_dependencies(piled pigpiod_if2) #is there cleaner way to make submodule build??? 
 endif()
 
 include(GNUInstallDirs)
-install(TARGETS led-backlight
+install(TARGETS piled
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

@@ -1,4 +1,4 @@
-# led-server
+# PiLED
 
 This project used for installing on Raspberry Pi.  
 LED Strip is connected to Raspberry Pi GPIO pins.  
@@ -12,7 +12,7 @@ This program opens TCP server on port 3384 and waits for plain TCP packets, crea
 - [ ] Some basic animations support  
 - [x] Get current color support in protocol
 - [ ] OpenRGB SDK support (connect to server, get devices, choose where to set and set colors on them too)
-- [ ] Use config file from home directory
+- [x] Use config file from home directory
 - [ ] systemd service
 - [ ] brightness support (?)
 

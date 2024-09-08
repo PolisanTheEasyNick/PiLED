@@ -177,14 +177,14 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
     return result;
 }
 
-void parse_config(const char *config_file) {
+uint8_t parse_config(const char *config_file) {
     config_t cfg;
     config_init(&cfg);
 
     if (!config_read_file(&cfg, config_file)) {
         fprintf(stderr, "Error reading config file: %s\n", config_error_text(&cfg));
         config_destroy(&cfg);
-        exit(EXIT_FAILURE);
+        return 1;
     }
     logger("Opened config file");
 
@@ -241,6 +241,7 @@ void parse_config(const char *config_file) {
     logger("Passed config:\nRaspberry Pi address: %s\nPort: %s\nRed pin: %d\nGreen pin: %d\nBlue pin: %d\nShared "
            "secret: %s",
            PI_ADDR, PI_PORT, RED_PIN, GREEN_PIN, BLUE_PIN, SHARED_SECRET);
+    return 0;
 }
 
 struct section_sizes get_section_sizes(uint8_t version) {
