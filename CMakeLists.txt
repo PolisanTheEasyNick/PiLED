@@ -39,4 +39,11 @@ install(TARGETS piled
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+if(EXISTS "/etc/systemd/system")
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/piled.service
+    DESTINATION /etc/systemd/system)
+endif()
 
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/piled.conf
+  DESTINATION /etc/config)

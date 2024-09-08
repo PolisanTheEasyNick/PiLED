@@ -75,7 +75,11 @@ int load_config() {
         }
     }
 
-    if (try_load_config("../piled.conf") != 0) {
+    if (try_load_config("../piled.conf") == 0) {
+        return 0;
+    }
+
+    if (try_load_config("/etc/config/piled.conf") != 0) {
         logger("Can't load any of the configs! Aborting.");
         return -1;
     }

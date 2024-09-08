@@ -1,0 +1,14 @@
+[Unit]
+Description=PiLED Service
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/piled
+User=nobody
+Group=nobody
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=piled
+
+[Install]
+WantedBy=multi-user.target

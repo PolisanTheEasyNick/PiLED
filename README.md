@@ -13,7 +13,7 @@ This program opens TCP server on port 3384 and waits for plain TCP packets, crea
 - [x] Get current color support in protocol
 - [ ] OpenRGB SDK support (connect to server, get devices, choose where to set and set colors on them too)
 - [x] Use config file from home directory
-- [ ] systemd service
+- [x] systemd service
 - [ ] brightness support (?)
 
 
