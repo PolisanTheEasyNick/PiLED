@@ -8,6 +8,7 @@ extern int RED_PIN;
 extern int GREEN_PIN;
 extern int BLUE_PIN;
 
+#define PILED_VERSION 4
 #define BUFFER_SIZE 55    // ver 4
 #define HEADER_SIZE 18    // ver 4
 #define PAYLOAD_SIZE 5    // ver 4

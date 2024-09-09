@@ -26,6 +26,7 @@ add_executable(piled
   utils/utils.h utils/utils.c
   parser/parser.h parser/parser.c
   rgb/gpio.h rgb/gpio.c
+  rgb/openrgb.h rgb/openrgb.c
   globals/globals.h globals/globals.c
 )
 

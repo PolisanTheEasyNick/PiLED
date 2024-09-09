@@ -2,6 +2,7 @@
 #include "parser/parser.h"
 #include "pigpiod_if2.h"
 #include "rgb/gpio.h"
+#include "rgb/openrgb.h"
 #include "server/server.h"
 #include "utils/utils.h"
 #include <getopt.h>
@@ -89,7 +90,9 @@ int load_config() {
 
 int main(int argc, char *argv[]) {
     signal(SIGINT, handle_sigint);
-
+    openrgb_connect();
+    // printf("Got controllers: %d", controllers);
+    return 0;
     if (load_config() != 0) {
         return -1;
     }
