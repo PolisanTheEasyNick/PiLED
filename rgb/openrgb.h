@@ -1,6 +1,7 @@
 #ifndef OPENRGB_H
 #define OPENRGB_H
 
+#include <pthread.h>
 #include <stdint.h>
 
 // Packet ID
@@ -25,6 +26,8 @@
 
 extern int openrgb_socket;
 extern uint32_t openrgb_using_version;
+extern pthread_t recv_thread_id;
+extern uint8_t suspend_server;
 
 uint8_t *generate_packet(uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size, const uint8_t *data);
 void openrgb_connect();

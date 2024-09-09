@@ -14,6 +14,8 @@
 
 int openrgb_socket;
 uint32_t openrgb_using_version = 0;
+pthread_t recv_thread_id;
+uint8_t suspend_server = 0;
 
 uint8_t *generate_packet(uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size, const uint8_t *data) {
     printf("Generating OpenRGB header with dev_idx: %d, pkt_id: %d, pkg_size: %d\n", pkt_dev_idx, pkt_id, pkg_size);
@@ -106,7 +108,6 @@ void openrgb_connect() {
     printf("\nOpenRGB Server's Version: %d, Client max supported version: %d, Using version: %d\n", openrgb_version,
            OPENRGB_SUPPORTED_VERSION, openrgb_using_version);
 
-    // Settings client name
     free(header);
     printf("Setting client's name\n");
 
@@ -118,18 +119,57 @@ void openrgb_connect() {
         return;
     }
 
-    pthread_t recv_thread_id;
+    printf("Started listening for responses...\n");
+
     if (pthread_create(&recv_thread_id, NULL, recv_thread, NULL) != 0) {
         perror("Failed to create receive thread");
         close(openrgb_socket);
         return;
     }
+
+    request_controller_count();
+
     pthread_join(recv_thread_id, NULL);
 
     free(header);
 }
 
-uint32_t request_controller_count() {}
+uint32_t request_controller_count() {
+    // stopping listening for responses
+    suspend_server = 1;
+    pthread_join(recv_thread_id, NULL);
+    printf("Requesting controller count");
+    uint8_t *header = generate_packet(0, OPENRGB_NET_PACKET_ID_REQUEST_CONTROLLER_COUNT, 0, NULL);
+    if (send(openrgb_socket, header, 20, 0) < 0) {
+        perror("Failed to send data");
+        close(openrgb_socket);
+        free(header);
+    }
+    uint8_t response[16];
+    int recv_size = recv(openrgb_socket, response, sizeof(response), 0);
+    printf("Received %d bytes from OpenRGB:\n", recv_size);
+    for (int i = 0; i < recv_size; i++) {
+        printf("%x ", response[i]);
+        if (response[i] != header[i] && i < 12) {
+            printf("Received unwanted package! Aborting.");
+            suspend_server = 0;
+            pthread_create(&recv_thread_id, NULL, recv_thread, NULL);
+            return -1;
+        }
+    }
+    printf("\n");
+    recv_size = recv(openrgb_socket, response, sizeof(response), 0);
+    printf("Received %d bytes with device count from OpenRGB:\n", recv_size);
+    for (int i = 0; i < recv_size; i++) {
+        printf("%x ", response[i]);
+    }
+    uint32_t device_count = 0;
+    memcpy(&device_count, response, 4);
+    printf("\nGot device count: %d\n", device_count);
+    suspend_server = 0;
+    pthread_create(&recv_thread_id, NULL, recv_thread, NULL);
+    return device_count;
+}
 
 void *recv_thread(void *arg) {
     uint8_t response[1024];
@@ -142,12 +182,10 @@ void *recv_thread(void *arg) {
         perror("Failed to set socket timeout");
     }
 
-    while (!stop_server) {
+    while (!stop_server && !suspend_server) {
         recv_size = recv(openrgb_socket, response, sizeof(response), 0);
         if (recv_size < 0) {
             if (errno == EWOULDBLOCK || errno == EAGAIN) {
-                // Timeout occurred, can continue
-                // printf("Receive timeout, no data received within 100 ms\n");
                 continue;
             }
             perror("Failed to receive data");

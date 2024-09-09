@@ -287,13 +287,12 @@ void parse_openrgb_response(const uint8_t *buffer, uint32_t buffer_size) {
     }
     printf("\n");
 
-    // Checking for magick
+    // сhecking for magick
     if (buffer[0] != 'O' || buffer[1] != 'R' || buffer[2] != 'G' || buffer[3] != 'B') {
         printf("Magick wrong! Not a OpenRGB package!\n");
         return;
     }
 
-    // Getting device index
     uint32_t pkt_dev_idx = 0;
     memcpy(&pkt_dev_idx, buffer + 4, 4);
     printf("Got device index: %d\n", pkt_dev_idx);
@@ -318,17 +317,8 @@ void parse_openrgb_response(const uint8_t *buffer, uint32_t buffer_size) {
         break;
     }
     case OPENRGB_NET_PACKET_ID_REQUEST_PROTOCOL_VERSION: {
-        printf("Packet id is NET_PACKET_ID_REQUEST_PROTOCOL_VERSION\n");
-        if (pkt_size != 4) {
-            printf("Packet size is not 4!\n");
-            return;
-        }
-        uint32_t openrgb_version = 0;
-        memcpy(&openrgb_version, buffer + 16, 4);
-        openrgb_using_version =
-            openrgb_version <= OPENRGB_SUPPORTED_VERSION ? openrgb_version : OPENRGB_SUPPORTED_VERSION;
-        printf("OpenRGB Server's Version: %d, Client max supported version: %d, Using version: %d\n", openrgb_version,
-               OPENRGB_SUPPORTED_VERSION, openrgb_using_version);
+        printf("NET_PACKET_ID_REQUEST_PROTOCOL_VERSION\n");
+        // No need to impement since it parsed in openrgb.c while version negotiations
         break;
     }
     }
