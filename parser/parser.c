@@ -280,46 +280,41 @@ struct section_sizes get_section_sizes(uint8_t version) {
 }
 
 void parse_openrgb_response(const uint8_t *buffer, uint32_t buffer_size) {
-    logger("OpenRGB Parser: Starting parsing buffer with size %d", buffer_size);
-    printf("Buffer:\n");
-    for (int i = 0; i < buffer_size; i++) {
-        printf("%x ", buffer[i]);
-    }
-    printf("\n");
+    // logger("OpenRGB Parser: Starting parsing buffer with size %d", buffer_size);
+    // printf("Buffer:\n");
+    // for (int i = 0; i < buffer_size; i++) {
+    //     printf("%x ", buffer[i]);
+    // }
+    // printf("\n");
 
-    // сhecking for magick
-    if (buffer[0] != 'O' || buffer[1] != 'R' || buffer[2] != 'G' || buffer[3] != 'B') {
-        printf("Magick wrong! Not a OpenRGB package!\n");
-        return;
-    }
+    // // сhecking for magick
+    // if (buffer[0] != 'O' || buffer[1] != 'R' || buffer[2] != 'G' || buffer[3] != 'B') {
+    //     printf("Magick wrong! Not a OpenRGB package!\n");
+    //     return;
+    // }
 
-    uint32_t pkt_dev_idx = 0;
-    memcpy(&pkt_dev_idx, buffer + 4, 4);
-    printf("Got device index: %d\n", pkt_dev_idx);
+    // uint32_t pkt_dev_idx = 0;
+    // memcpy(&pkt_dev_idx, buffer + 4, 4);
+    // printf("Got device index: %d\n", pkt_dev_idx);
 
-    uint32_t pkt_id = 0;
-    memcpy(&pkt_id, buffer + 8, 4);
-    printf("Got packet id: %d\n", pkt_id);
+    // uint32_t pkt_id = 0;
+    // memcpy(&pkt_id, buffer + 8, 4);
+    // printf("Got packet id: %d\n", pkt_id);
 
-    uint32_t pkt_size = 0;
-    memcpy(&pkt_size, buffer + 12, 4);
-    printf("Got packet size: %d\n", pkt_size);
+    // uint32_t pkt_size = 0;
+    // memcpy(&pkt_size, buffer + 12, 4);
+    // printf("Got packet size: %d\n", pkt_size);
 
-    switch (pkt_id) {
-    case OPENRGB_NET_PACKET_ID_REQUEST_CONTROLLER_COUNT: {
-        printf("Packet id is OpenRGB response controller count (response)\n");
-        // TODO: fetch controller count
-        break;
-    }
-    case OPENRGB_NET_PACKET_ID_REQUEST_CONTROLLER_DATA: {
-        printf("NET_PACKET_ID_REQUEST_CONTROLLER_DATA not implemented.\n");
-        // Do i need it for this project?
-        break;
-    }
-    case OPENRGB_NET_PACKET_ID_REQUEST_PROTOCOL_VERSION: {
-        printf("NET_PACKET_ID_REQUEST_PROTOCOL_VERSION\n");
-        // No need to impement since it parsed in openrgb.c while version negotiations
-        break;
-    }
-    }
+    // switch (pkt_id) {
+    // case OPENRGB_NET_PACKET_ID_REQUEST_CONTROLLER_DATA: {
+    //     printf("NET_PACKET_ID_REQUEST_CONTROLLER_DATA not implemented.\n");
+    //     // Do i need it for this project?
+    //     break;
+    // }
+    // case OPENRGB_NET_PACKET_ID_REQUEST_PROTOCOL_VERSION: {
+    //     printf("NET_PACKET_ID_REQUEST_PROTOCOL_VERSION\n");
+    //     // No need to impement since it parsed in openrgb.c while version negotiations
+    //     break;
+    // }
+    // }
 }

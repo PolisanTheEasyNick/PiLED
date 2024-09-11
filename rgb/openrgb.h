@@ -29,9 +29,88 @@ extern uint32_t openrgb_using_version;
 extern pthread_t recv_thread_id;
 extern uint8_t suspend_server;
 
+struct openrgb_controller_data {
+    // NET_PACKET_ID_REQUEST_CONTROLLER_DATA response type for version 3 of OpenRGB SDK
+    uint32_t data_size; // size of all data in packet
+    int32_t type;       // RGBController type field value
+
+    uint16_t name_len; // Length of RGBController name field string, including null termination
+    uint8_t *name;     // RGBController name field string value, including null termination
+
+    uint16_t vendor_len; // Length of RGBController vendor field string, including null termination
+    uint8_t *vendor;     // RGBController vendor field string value, including null termination
+
+    uint16_t description_len; // Length of RGBController description field string, including null termination
+    uint8_t *description;     // RGBController description field string value, including null termination
+
+    uint16_t version_len; // Length of RGBController version field string, including null termination
+    uint8_t *version;     // RGBController version field string value, including null termination
+
+    uint16_t serial_len; // Length of RGBController serial field string, including null termination
+    uint8_t *serial;     // RGBController serial field string value, including null termination
+
+    uint16_t location_len; // Length of RGBController location field string, including null termination
+    uint8_t *location;     // RGBController location field string value, including null termination
+
+    uint16_t num_modes;  // Number of modes in RGBController
+    uint8_t active_mode; // RGBController active_mode field value
+    uint8_t *modes;      // See Mode Data block format table.  Repeat num_modes times
+
+    uint16_t num_zones; // Number of zones in RGBController
+    uint8_t *zones;     // See Zone Data block format table.  Repeat num_zones times
+
+    uint16_t num_leds; // Number of LEDs in RGBController
+    uint8_t *leds;     // See LED Data block format table.  Repeat num_leds times
+
+    uint16_t num_colors; // Number of colors in RGBController
+    uint8_t *colors;     // RGBController colors field values
+};
+
+struct openrgb_mode_data {
+    uint16_t mode_name_len;       // Length of mode name string, including null termination
+    uint8_t *mode_name;           // Mode name string value, including null termination
+    uint32_t mode_value;          // Mode value field value
+    uint32_t mode_flags;          // Mode flags field value
+    uint32_t mode_speed_min;      // Mode speed_min field value
+    uint32_t mode_speed_max;      // Mode speed_max field value
+    uint32_t mode_brightness_min; // Mode brightness_min field value
+    uint32_t mode_brightness_max; // Mode brightness_max field value
+    uint32_t mode_colors_min;     // Mode colors_min field value
+    uint32_t mode_colors_max;     // Mode colors_max field value
+    uint32_t mode_speed;          // Mode speed value
+    uint32_t mode_brightness;     // Mode brightness value
+    uint32_t mode_direction;      // Mode direction value
+    uint32_t mode_color_mode;     // Mode color_mode value
+    uint32_t mode_num_colors;     // Mode number of colors
+    uint32_t *mode_colors;        // Mode color values
+};
+
+struct openrgb_zone_data {
+    uint16_t zone_name_len;
+    uint8_t *zone_name;
+    uint32_t zone_type;
+    uint32_t zone_leds_min;
+    uint32_t zone_leds_max;
+    uint32_t zone_leds_count;
+    uint16_t zone_matrix_len;
+    uint32_t zone_matrix_height;
+    uint32_t zone_matrix_width;
+    uint32_t *zone_matrix_data;
+};
+
+struct openrgb_led_data {
+    uint16_t led_name_len;
+    uint8_t *led_name;
+    uint32_t led_value;
+};
+
 uint8_t *generate_packet(uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size, const uint8_t *data);
 void openrgb_connect();
 uint32_t request_controller_count();
+struct openrgb_controller_data request_controller_data(uint32_t pkt_dev_idx);
 void *recv_thread(void *arg);
+
+// free functions
+void free_openrgb_controller_data(struct openrgb_controller_data *data);
 
 #endif
