@@ -6,6 +6,7 @@
 #include "server/server.h"
 #include "utils/utils.h"
 #include <getopt.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,9 +91,9 @@ int load_config() {
 
 int main(int argc, char *argv[]) {
     signal(SIGINT, handle_sigint);
-    openrgb_connect();
+    openrgb_init();
     // printf("Got controllers: %d", controllers);
-    return 0;
+    pthread_join(openrgb_recv_thread_id, NULL);
     if (load_config() != 0) {
         return -1;
     }
@@ -116,6 +117,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to start server\n");
         return 1;
     }
+
     logger("See you next time!");
     pigpio_stop(pi);
     free(PI_ADDR);

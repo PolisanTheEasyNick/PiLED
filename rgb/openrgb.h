@@ -25,9 +25,10 @@
 #define OPENRGB_SUPPORTED_VERSION 4
 
 extern int openrgb_socket;
-extern uint32_t openrgb_using_version;
-extern pthread_t recv_thread_id;
-extern uint8_t suspend_server;
+extern pthread_t openrgb_recv_thread_id;
+extern pthread_mutex_t openrgb_send_mutex;
+extern int8_t openrgb_using_version;
+extern uint8_t openrgb_set_clientname;
 
 struct openrgb_controller_data {
     // NET_PACKET_ID_REQUEST_CONTROLLER_DATA response type for version 3 of OpenRGB SDK
@@ -104,11 +105,16 @@ struct openrgb_led_data {
     uint32_t led_value;
 };
 
+void openrgb_init_header(uint8_t **header, uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size);
+void openrgb_init();
+void openrgb_request_protocol_version();
+void openrgb_set_client_name();
+
 uint8_t *generate_packet(uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size, const uint8_t *data);
-void openrgb_connect();
+
 uint32_t request_controller_count();
-struct openrgb_controller_data request_controller_data(uint32_t pkt_dev_idx);
-void *recv_thread(void *arg);
+struct openrgb_controller_data openrgb_request_controller_data(uint32_t pkt_dev_idx);
+void *openrgb_recv_thread(void *arg);
 
 // free functions
 void free_openrgb_controller_data(struct openrgb_controller_data *data);
