@@ -27,9 +27,18 @@ void logger(const char *format, ...) {
 
 void logger_debug(const char *format, ...) {
 #ifdef DEBUG
+    time_t now;
+    time(&now);
+    struct tm *local = localtime(&now);
+
+    printf("[%04d-%02d-%02d %02d:%02d:%02d] ", local->tm_year + 1900, local->tm_mon + 1, local->tm_mday, local->tm_hour,
+           local->tm_min, local->tm_sec);
+
     va_list args;
     va_start(args, format);
-    logger(format, args);
+    vprintf(format, args);
     va_end(args);
+
+    printf("\n");
 #endif
 }

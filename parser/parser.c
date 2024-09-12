@@ -43,9 +43,7 @@ struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, 
 
     // generating new hmac
     char *key = SHARED_SECRET;
-    int key_length = 0;
-    if (SHARED_SECRET)
-        key_length = strlen(key);
+    int key_length = strlen(key);
     unsigned char GENERATED_HMAC[32];
     unsigned int hmac_len;
     HMAC(EVP_sha256(), key, key_length, HMAC_DATA, HMAC_DATA_SIZE, GENERATED_HMAC, &hmac_len);
@@ -241,17 +239,19 @@ uint8_t parse_config(const char *config_file) {
         return -1;
     }
     SHARED_SECRET = malloc(strlen(secret) + 1);
-    strcpy(SHARED_SECRET, secret);
+    strncpy(SHARED_SECRET, secret, strlen(secret));
     SHARED_SECRET[strlen(secret)] = 0;
 
     const char *openrgb_addr;
     if (!config_lookup_string(&cfg, "OPENRGB_SERVER", &openrgb_addr)) {
         fprintf(stderr, "Missing OPENRGB_SERVER in config file, using default 127.0.0.1\n");
         OPENRGB_SERVER = malloc(strlen("127.0.0.1") + 1);
-        strcpy(OPENRGB_SERVER, "127.0.0.1");
+        strncpy(OPENRGB_SERVER, "127.0.0.1", strlen("127.0.0.1"));
+        OPENRGB_SERVER[strlen("127.0.0.1")] = 0;
     } else {
-        OPENRGB_SERVER = malloc(strlen(openrgb_addr) + 1);
-        strcpy(OPENRGB_SERVER, openrgb_addr);
+        OPENRGB_SERVER = malloc(strlen(openrgb_addr));
+        strncpy(OPENRGB_SERVER, openrgb_addr, strlen(openrgb_addr));
+        OPENRGB_SERVER[strlen(openrgb_addr)] = 0;
     }
 
     if (!config_lookup_int(&cfg, "OPENRGB_PORT", &OPENRGB_PORT)) {

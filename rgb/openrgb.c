@@ -17,14 +17,14 @@
 #include <unistd.h>
 
 int openrgb_socket;
-pthread_t openrgb_recv_thread_id;
+pthread_t openrgb_recv_thread_id, openrgb_reconnect_thread_id;
 pthread_mutex_t openrgb_send_mutex;
 int8_t openrgb_using_version = -1;
 int32_t openrgb_devices_num = -1;
 int32_t openrgb_using_devices_num = 0;
 int8_t openrgb_parsed_all_devices = -1;
 struct openrgb_controller_data *openrgb_controllers;
-volatile sig_atomic_t openrgb_stop_server = 0;
+volatile sig_atomic_t openrgb_stop_server = 0, openrgb_needs_reinit = 0;
 struct openrgb_device *openrgb_devices_to_change;
 
 void openrgb_init_header(uint8_t *header, uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size) {
@@ -49,6 +49,12 @@ void openrgb_init_header(uint8_t *header, uint32_t pkt_dev_idx, uint32_t pkt_id,
 }
 
 void openrgb_init() {
+    openrgb_stop_server = 0;
+    openrgb_needs_reinit = 0;
+    openrgb_using_devices_num = 0;
+    openrgb_devices_num = -1;
+    openrgb_using_version = -1;
+    openrgb_parsed_all_devices = -1;
     logger_debug("Initializing OpenRGB!");
     // connects to OpenRGB server, negotiates OpenRGB's SDK version and listens for responses
     if (pthread_mutex_init(&openrgb_send_mutex, NULL) != 0) {
@@ -154,6 +160,8 @@ void openrgb_init() {
     logger_debug("Parsing device preferences config...");
     parse_openrgb_config_devices("/etc/piled/openrgb_config");
 #endif
+
+    pthread_create(&openrgb_reconnect_thread_id, NULL, openrgb_reconnect_thread, NULL);
 }
 
 void openrgb_request_protocol_version() {
@@ -277,6 +285,7 @@ void *openrgb_recv_thread(void *arg) {
 
         if (recv_size == 0) {
             logger_debug("Connection closed by peer\n");
+            openrgb_needs_reinit = 1;
             break;
         }
 
@@ -486,6 +495,7 @@ void *openrgb_recv_thread(void *arg) {
                 logger_debug("Parsing led #%d of %d\n", led, result.num_leds);
                 memcpy(&led_data[led].led_name_len, response + offset, 2);
                 offset += 2;
+                logger_debug("Led name len: %d", led_data[led].led_name_len);
                 led_data[led].led_name = malloc(led_data[led].led_name_len);
                 memcpy(led_data[led].led_name, response + offset, led_data[led].led_name_len);
                 offset += led_data[led].led_name_len;
@@ -564,8 +574,16 @@ void *openrgb_recv_thread(void *arg) {
 
 void openrgb_shutdown() {
     logger_debug("Stopping OpenRGB recv thread...");
-    openrgb_stop_server = 1;
-    pthread_join(openrgb_recv_thread_id, NULL);
+    if (openrgb_recv_thread_id) {
+        openrgb_stop_server = 1;
+        pthread_join(openrgb_recv_thread_id, NULL);
+    }
+
+    if (openrgb_socket >= 0) {
+        close(openrgb_socket);
+        openrgb_socket = -1;
+    }
+
     logger_debug("Releasing memory, allocated for OpenRGB");
     for (int i = 0; i < openrgb_devices_num; i++) {
         if (openrgb_controllers[i].name) {
@@ -589,9 +607,9 @@ void openrgb_shutdown() {
 
         if (openrgb_controllers[i].modes) {
             for (int mode = 0; mode < openrgb_controllers[i].num_modes; mode++) {
-                if (openrgb_controllers[i].modes[mode].mode_name)
+                if (openrgb_controllers[i].modes[mode].mode_name != NULL)
                     free(openrgb_controllers[i].modes[mode].mode_name);
-                if (openrgb_controllers[i].modes[mode].mode_colors)
+                if (openrgb_controllers[i].modes[mode].mode_colors != NULL)
                     free(openrgb_controllers[i].modes[mode].mode_colors);
             }
         }
@@ -601,7 +619,7 @@ void openrgb_shutdown() {
             for (int zone = 0; zone < openrgb_controllers[i].num_zones; zone++) {
                 if (openrgb_controllers[i].zones[zone].zone_name)
                     free(openrgb_controllers[i].zones[zone].zone_name);
-                if (openrgb_controllers[i].zones[zone].zone_matrix_data)
+                if (openrgb_controllers[i].zones[zone].zone_matrix_data != NULL)
                     free(openrgb_controllers[i].zones[zone].zone_matrix_data);
             }
         }
@@ -625,43 +643,21 @@ void openrgb_shutdown() {
     free(openrgb_devices_to_change);
 }
 
-void *openrgb_connect(void *arg) {
-    struct sockaddr_in server_addr;
-    int openrgb_socket_local;
-    while (!openrgb_stop_server) {
-        openrgb_socket_local = socket(AF_INET, SOCK_STREAM, 0);
-        if (openrgb_socket_local < 0) {
-            perror("Socket creation failed");
-            sleep(1);
-            continue;
-        }
+void *openrgb_reconnect_thread(void *arg) {
+    logger_debug("Started reconnect watcher thread...");
+    while (!openrgb_stop_server) {  // if not shut down
+        if (openrgb_needs_reinit) { // if connection was closed
+            openrgb_needs_reinit = 0;
 
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(OPENRGB_PORT);
-        if (inet_pton(AF_INET, OPENRGB_SERVER, &server_addr.sin_addr) <= 0) {
-            logger_debug("Invalid OpenRGB server's IP address or IP address not supported");
-            close(openrgb_socket_local);
-            sleep(1);
-            continue;
-        }
+            logger_debug("Connection to OpenRGB is closed, need to reinit OpenRGB.");
+            openrgb_shutdown();
 
-        // Attempt to connect to the server
-        if (connect(openrgb_socket_local, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-            logger_debug("Connection failed");
-            close(openrgb_socket_local);
-            sleep(1);
-            continue; // Retry after 1 second
+            usleep(500000);
+            logger_debug("Initializing OpenRGB again");
+            openrgb_init();
         }
-
-        // If connected successfully
-        logger_debug("Connected to OpenRGB server");
-        openrgb_socket = openrgb_socket_local; // Update the global socket variable
-        return NULL;                           // Exit the thread function
+        usleep(100000);
     }
-
-    if (openrgb_stop_server) {
-        logger_debug("Stopped trying to connect to server");
-    }
-
+    logger_debug("Reconnect watcher thread exiting.");
     return NULL;
 }
