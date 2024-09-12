@@ -110,7 +110,7 @@ struct openrgb_led_data {
     uint32_t led_value;
 };
 
-void openrgb_init_header(uint8_t **header, uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size);
+void openrgb_init_header(uint8_t *header, uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size);
 void openrgb_init();
 void openrgb_shutdown();
 void openrgb_request_protocol_version();

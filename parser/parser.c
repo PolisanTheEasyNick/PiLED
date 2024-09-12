@@ -43,7 +43,9 @@ struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, 
 
     // generating new hmac
     char *key = SHARED_SECRET;
-    int key_length = strlen(key);
+    int key_length = 0;
+    if (SHARED_SECRET)
+        key_length = strlen(key);
     unsigned char GENERATED_HMAC[32];
     unsigned int hmac_len;
     HMAC(EVP_sha256(), key, key_length, HMAC_DATA, HMAC_DATA_SIZE, GENERATED_HMAC, &hmac_len);
@@ -241,6 +243,7 @@ uint8_t parse_config(const char *config_file) {
     if (!config_lookup_string(&cfg, "SHARED_SECRET", &secret)) {
         fprintf(stderr, "Missing SHARED_SECRET in config file\n");
         SHARED_SECRET = NULL;
+        return -1;
     }
     SHARED_SECRET = malloc(strlen(secret));
     strncpy(SHARED_SECRET, secret, strlen(secret));
@@ -249,6 +252,7 @@ uint8_t parse_config(const char *config_file) {
     logger("Passed config:\nRaspberry Pi address: %s\nPort: %s\nRed pin: %d\nGreen pin: %d\nBlue pin: %d\nShared "
            "secret: %s",
            PI_ADDR, PI_PORT, RED_PIN, GREEN_PIN, BLUE_PIN, SHARED_SECRET);
+    config_destroy(&cfg);
     return 0;
 }
 
@@ -287,9 +291,9 @@ void parse_openrgb_config_devices(const char *config_file) {
         return;
     }
 
-    char line[256];
+    uint8_t line[256];
     uint8_t device = 0;
-    while (fgets(line, sizeof(line), file) != NULL) {
+    while (fgets((char *)line, sizeof(line), file) != NULL) {
         if (line[0] != '#') {
             continue;
         }
@@ -298,25 +302,25 @@ void parse_openrgb_config_devices(const char *config_file) {
         while (*content == ' ' || *content == '\t')
             content++;
 
-        char *colon_pos = strchr(content, ':');
+        uint8_t *colon_pos = (uint8_t *)strchr((char *)content, ':');
         if (colon_pos == NULL) {
             fprintf(stderr, "Invalid line format: %s", line);
             continue;
         }
 
         *colon_pos = '\0';
-        int number = atoi(content);
+        int number = atoi((const char *)content);
 
-        char *name = colon_pos + 1;
+        uint8_t *name = colon_pos + 1;
         while (*name == ' ' || *name == '\t')
             name++;
 
-        char *newline = strchr(name, '\n');
+        uint8_t *newline = (uint8_t *)strchr((char *)name, '\n');
         if (newline != NULL)
             *newline = '\0';
         openrgb_devices_to_change[device].device_id = number;
-        openrgb_devices_to_change[device].name = malloc(strlen(name) + 1);
-        strcpy(openrgb_devices_to_change[device++].name, name);
+        openrgb_devices_to_change[device].name = malloc(strlen((char *)name) + 1);
+        strcpy((char *)openrgb_devices_to_change[device++].name, (char *)name);
     }
 
     fclose(file);

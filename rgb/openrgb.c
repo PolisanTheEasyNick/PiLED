@@ -27,22 +27,22 @@ struct openrgb_controller_data *openrgb_controllers;
 volatile sig_atomic_t openrgb_stop_server = 0;
 struct openrgb_device *openrgb_devices_to_change;
 
-void openrgb_init_header(uint8_t **header, uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size) {
+void openrgb_init_header(uint8_t *header, uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size) {
     // as per 11.09.2024 only God and me knows how pointers works here
     // as per future only God will know.
-    *header = malloc(16);
+
     // adding magick
-    (*header)[0] = 'O';
-    (*header)[1] = 'R';
-    (*header)[2] = 'G';
-    (*header)[3] = 'B';
-    memcpy(((*header) + 4), &pkt_dev_idx, 4);
-    memcpy(((*header) + 8), &pkt_id, 4);
-    memcpy(((*header) + 12), &pkg_size, 4);
+    header[0] = 'O';
+    header[1] = 'R';
+    header[2] = 'G';
+    header[3] = 'B';
+    memcpy((header + 4), &pkt_dev_idx, 4);
+    memcpy((header + 8), &pkt_id, 4);
+    memcpy((header + 12), &pkg_size, 4);
 #ifdef DEBUG
     printf("OpenRGB: Generated header\n");
     for (int i = 0; i < 16; i++) {
-        printf("%x ", (*header)[i]);
+        printf("%x ", header[i]);
     }
     printf("\n");
 #endif
@@ -149,8 +149,8 @@ void openrgb_init() {
 
 void openrgb_request_protocol_version() {
     logger_debug("Requesting protocol version.");
-    uint8_t *header = NULL;
-    openrgb_init_header(&header, 0, OPENRGB_NET_PACKET_ID_REQUEST_PROTOCOL_VERSION, 4);
+    uint8_t header[16];
+    openrgb_init_header(header, 0, OPENRGB_NET_PACKET_ID_REQUEST_PROTOCOL_VERSION, 4);
     uint32_t version = OPENRGB_SUPPORTED_VERSION;
     pthread_mutex_lock(&openrgb_send_mutex);
 #ifdef DEBUG
@@ -166,42 +166,38 @@ void openrgb_request_protocol_version() {
 #endif
     send(openrgb_socket, &version, 4, 0);
     pthread_mutex_unlock(&openrgb_send_mutex);
-    free(header);
 }
 
 void openrgb_set_client_name() {
     uint8_t *name = malloc(strlen("piled vx"));
     strcpy((char *)name, "PiLED v");
     name[7] = PILED_VERSION + '0';
-    uint8_t *header = NULL;
-    openrgb_init_header(&header, 0, OPENRGB_NET_PACKET_ID_SET_CLIENT_NAME, strlen("piled vx"));
+    uint8_t header[16];
+    openrgb_init_header(header, 0, OPENRGB_NET_PACKET_ID_SET_CLIENT_NAME, strlen("piled vx"));
     pthread_mutex_lock(&openrgb_send_mutex);
     send(openrgb_socket, header, 16, 0);
     send(openrgb_socket, name, strlen("piled vx"), 0);
     pthread_mutex_unlock(&openrgb_send_mutex);
-    free(header);
     free(name);
 }
 
 void openrgb_request_controller_count() {
     logger_debug("Requesting controller count");
-    uint8_t *header;
-    openrgb_init_header(&header, 0, OPENRGB_NET_PACKET_ID_REQUEST_CONTROLLER_COUNT, 0);
+    uint8_t header[16];
+    openrgb_init_header(header, 0, OPENRGB_NET_PACKET_ID_REQUEST_CONTROLLER_COUNT, 0);
     pthread_mutex_lock(&openrgb_send_mutex);
     send(openrgb_socket, header, 16, 0);
     pthread_mutex_unlock(&openrgb_send_mutex);
-    free(header);
 }
 
 void openrgb_request_controller_data(uint32_t pkt_dev_idx) {
     logger_debug("Requesting controller data");
-    uint8_t *header;
-    openrgb_init_header(&header, pkt_dev_idx, OPENRGB_NET_PACKET_ID_REQUEST_CONTROLLER_DATA, 4);
+    uint8_t header[16];
+    openrgb_init_header(header, pkt_dev_idx, OPENRGB_NET_PACKET_ID_REQUEST_CONTROLLER_DATA, 4);
     pthread_mutex_lock(&openrgb_send_mutex);
     send(openrgb_socket, header, 16, 0);
     send(openrgb_socket, &openrgb_using_version, 4, 0);
     pthread_mutex_unlock(&openrgb_send_mutex);
-    free(header);
 }
 
 void openrgb_request_update_leds(uint32_t pkt_dev_idx, struct Color color) {
@@ -211,8 +207,8 @@ void openrgb_request_update_leds(uint32_t pkt_dev_idx, struct Color color) {
                            2 +                                            // num_colors
                            4 * openrgb_controllers[pkt_dev_idx].num_leds; // led_color
 
-    uint8_t *header;
-    openrgb_init_header(&header, pkt_dev_idx, OPENRGB_NET_PACKET_ID_RGBCONTROLLER_UPDATELEDS, packet_size);
+    uint8_t header[16];
+    openrgb_init_header(header, pkt_dev_idx, OPENRGB_NET_PACKET_ID_RGBCONTROLLER_UPDATELEDS, packet_size);
 
     uint8_t packet[packet_size];
     memcpy(packet, &packet_size, 4);
@@ -332,7 +328,7 @@ void *openrgb_recv_thread(void *arg) {
             offset += 2;
             logger_debug("Name length: %d\n", result.name_len);
             result.name = malloc(result.name_len);
-            strcpy(result.name, response + offset);
+            strcpy((char *)result.name, (char *)response + offset);
             offset += result.name_len;
             logger_debug("Parsed name by bytes:\n");
             for (int i = 0; i < result.name_len; i++) {
@@ -344,7 +340,7 @@ void *openrgb_recv_thread(void *arg) {
                 memcpy(&result.vendor_len, response + offset, 2);
                 offset += 2;
                 result.vendor = malloc(result.vendor_len);
-                strcpy(result.vendor, response + offset);
+                strcpy((char *)result.vendor, (char *)response + offset);
                 offset += result.vendor_len;
                 logger_debug("Vendor: %s, length: %d\n", result.vendor, result.vendor_len);
             }
@@ -352,28 +348,28 @@ void *openrgb_recv_thread(void *arg) {
             memcpy(&result.description_len, response + offset, 2);
             offset += 2;
             result.description = malloc(result.description_len);
-            strcpy(result.description, response + offset);
+            strcpy((char *)result.description, (char *)response + offset);
             offset += result.description_len;
             logger_debug("Description: %s, length: %d\n", result.description, result.description_len);
 
             memcpy(&result.version_len, response + offset, 2);
             offset += 2;
             result.version = malloc(result.version_len);
-            strcpy(result.version, response + offset);
+            strcpy((char *)result.version, (char *)response + offset);
             offset += result.version_len;
             logger_debug("Version: %s, length: %d\n", result.version, result.version_len);
 
             memcpy(&result.serial_len, response + offset, 2);
             offset += 2;
             result.serial = malloc(result.serial_len);
-            strcpy(result.serial, response + offset);
+            strcpy((char *)result.serial, (char *)response + offset);
             offset += result.serial_len;
             logger_debug("Serial: %s, length: %d\n", result.serial, result.serial_len);
 
             memcpy(&result.location_len, response + offset, 2);
             offset += 2;
             result.location = malloc(result.location_len);
-            strcpy(result.location, response + offset);
+            strcpy((char *)result.location, (char *)response + offset);
             offset += result.location_len;
             logger_debug("Location size: %d, Location: %s\n", result.location_len, result.location);
 
@@ -426,7 +422,7 @@ void *openrgb_recv_thread(void *arg) {
                 offset += 2;
                 logger_debug("Number of colors: %d\n", mode_data[mode].mode_num_colors);
                 mode_data[mode].mode_colors = malloc(4 * mode_data[mode].mode_num_colors);
-                memcpy(&mode_data[mode].mode_colors, response + offset, 4 * mode_data[mode].mode_num_colors);
+                memcpy(mode_data[mode].mode_colors, response + offset, 4 * mode_data[mode].mode_num_colors);
                 offset += 4 * mode_data[mode].mode_num_colors;
             }
             result.modes = mode_data;
@@ -583,26 +579,32 @@ void openrgb_shutdown() {
         }
 
         if (openrgb_controllers[i].modes) {
-            if (openrgb_controllers[i].modes->mode_name)
-                free(openrgb_controllers[i].modes->mode_name);
-            if (openrgb_controllers[i].modes->mode_colors)
-                free(openrgb_controllers[i].modes->mode_colors);
-            free(openrgb_controllers[i].modes);
+            for (int mode = 0; mode < openrgb_controllers[i].num_modes; mode++) {
+                if (openrgb_controllers[i].modes[mode].mode_name)
+                    free(openrgb_controllers[i].modes[mode].mode_name);
+                if (openrgb_controllers[i].modes[mode].mode_colors)
+                    free(openrgb_controllers[i].modes[mode].mode_colors);
+            }
         }
+        free(openrgb_controllers[i].modes);
 
         if (openrgb_controllers[i].zones) {
-            if (openrgb_controllers[i].zones->zone_name)
-                free(openrgb_controllers[i].zones->zone_name);
-            if (openrgb_controllers[i].zones->zone_matrix_data)
-                free(openrgb_controllers[i].zones->zone_matrix_data);
-            free(openrgb_controllers[i].zones);
+            for (int zone = 0; zone < openrgb_controllers[i].num_zones; zone++) {
+                if (openrgb_controllers[i].zones[zone].zone_name)
+                    free(openrgb_controllers[i].zones[zone].zone_name);
+                if (openrgb_controllers[i].zones[zone].zone_matrix_data)
+                    free(openrgb_controllers[i].zones[zone].zone_matrix_data);
+            }
         }
+        free(openrgb_controllers[i].zones);
 
         if (openrgb_controllers[i].leds) {
-            if (openrgb_controllers[i].leds->led_name)
-                free(openrgb_controllers[i].leds->led_name);
-            free(openrgb_controllers[i].leds);
+            for (int led = 0; led < openrgb_controllers[i].num_leds; led++) {
+                if (openrgb_controllers[i].leds[led].led_name)
+                    free(openrgb_controllers[i].leds[led].led_name);
+            }
         }
+        free(openrgb_controllers[i].leds);
     }
     if (openrgb_controllers)
         free(openrgb_controllers);
