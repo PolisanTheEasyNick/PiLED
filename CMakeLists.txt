@@ -41,6 +41,7 @@ add_executable(openrgb_configurator
   globals/globals.h globals/globals.c
   utils/utils.h utils/utils.c
 )
+target_compile_definitions(openrgb_configurator PRIVATE ORGBCONFIGURATOR)
 
 include(GNUInstallDirs)
 install(TARGETS piled
@@ -52,6 +53,7 @@ if(EXISTS "/etc/systemd/system")
     DESTINATION /etc/systemd/system)
 endif()
 
-
+install(DIRECTORY DESTINATION /etc/piled
+  DIRECTORY_PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/piled.conf
-  DESTINATION /etc/config)
+  DESTINATION /etc/piled/)

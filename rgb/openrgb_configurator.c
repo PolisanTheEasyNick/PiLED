@@ -3,34 +3,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
 
 void display_menu(bool selected[], int current_device) {
     for (int i = 0; i < openrgb_devices_num; i++) {
-        printf("%s Device #%d: %s by %s\n", (i == current_device) ? "->" : "  ", i, openrgb_controllers[i].name,
-               openrgb_controllers[i].vendor);
-
-        printf("   [%c] Name: %s, Vendor: %s\n", selected[i] ? 'x' : ' ', openrgb_controllers[i].name,
-               openrgb_controllers[i].vendor);
+        printf("%s  [%c] Name: %s, Vendor: %s\n", (i == current_device) ? "->" : "  ", selected[i] ? 'x' : ' ',
+               openrgb_controllers[i].name, openrgb_controllers[i].vendor);
     }
 }
 
 void save_selected_devices(bool selected[]) {
-    FILE *file = fopen("selected_devices.txt", "w");
+    struct stat st = {0};
+    if (stat("/etc/piled", &st) == -1) {
+        mkdir("/etc/piled", 0755);
+    }
+    FILE *file = fopen("/etc/piled/openrgb_config", "w");
     if (file == NULL) {
-        perror("Failed to open file");
+        perror("Failed to open file at /etc/piled/openrgb_config, please run configurator with root.");
         return;
     }
 
     for (int i = 0; i < openrgb_devices_num; i++) {
         if (selected[i]) {
-            fprintf(file, "Device #%d: %s by %s\n", i, openrgb_controllers[i].name, openrgb_controllers[i].vendor);
+            fprintf(file, "#%d: %s\n", i, openrgb_controllers[i].name);
         }
     }
-
+    chmod("/etc/piled/openrgb_config", strtol("0644", 0, 8));
     fclose(file);
-    printf("Selected devices saved to 'selected_devices.txt'.\n");
+
+    printf("Selected devices saved to '/etc/piled/openrgb_config'.\n");
 }
 
 // https://stackoverflow.com/a/16361724
@@ -64,6 +68,7 @@ int main() {
 
     while (1) {
         system("clear");
+        printf("Please, choose which devices PiLED need to set color too:\n");
         display_menu(selected, current_device);
 
         printf("\nUse arrow keys to navigate, space to toggle, 'q' to quit and save.\n");

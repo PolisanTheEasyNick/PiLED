@@ -1,6 +1,6 @@
 #include "openrgb.h"
 #include "../globals/globals.h"
-#include "../server/server.h"
+#include "../parser/parser.h"
 #include "../utils/utils.h"
 #include <arpa/inet.h>
 #include <bits/pthreadtypes.h>
@@ -21,9 +21,11 @@ pthread_t openrgb_recv_thread_id;
 pthread_mutex_t openrgb_send_mutex;
 int8_t openrgb_using_version = -1;
 int32_t openrgb_devices_num = -1;
+int32_t openrgb_using_devices_num = 0;
 int8_t openrgb_parsed_all_devices = -1;
 struct openrgb_controller_data *openrgb_controllers;
 volatile sig_atomic_t openrgb_stop_server = 0;
+struct openrgb_device *openrgb_devices_to_change;
 
 void openrgb_init_header(uint8_t **header, uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size) {
     // as per 11.09.2024 only God and me knows how pointers works here
@@ -138,6 +140,11 @@ void openrgb_init() {
             break;
         }
     }
+
+#ifndef ORGBCONFIGURATOR
+    logger_debug("Parsing device preferences config...");
+    parse_openrgb_config_devices("/etc/piled/openrgb_config");
+#endif
 }
 
 void openrgb_request_protocol_version() {
@@ -233,6 +240,12 @@ void openrgb_request_update_leds(uint32_t pkt_dev_idx, struct Color color) {
     send(openrgb_socket, header, 16, 0);
     send(openrgb_socket, packet, packet_size, 0);
     pthread_mutex_unlock(&openrgb_send_mutex);
+}
+
+void openrgb_set_color_on_devices(struct Color color) {
+    for (uint16_t device = 0; device < openrgb_using_devices_num; device++) {
+        openrgb_request_update_leds(openrgb_devices_to_change[device].device_id, color);
+    }
 }
 
 void *openrgb_recv_thread(void *arg) {
@@ -593,4 +606,10 @@ void openrgb_shutdown() {
     }
     if (openrgb_controllers)
         free(openrgb_controllers);
+
+    for (int i = 0; i < openrgb_using_devices_num; i++) {
+        if (openrgb_devices_to_change[i].name)
+            free(openrgb_devices_to_change[i].name);
+    }
+    free(openrgb_devices_to_change);
 }

@@ -1,11 +1,11 @@
 #include "parser.h"
-#include "../rgb/openrgb.h"
 #include "../utils/utils.h"
 #include <libconfig.h>
 #include <openssl/hmac.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include <time.h>
 
 struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, unsigned char *PARSED_HMAC) {
@@ -250,6 +250,76 @@ uint8_t parse_config(const char *config_file) {
            "secret: %s",
            PI_ADDR, PI_PORT, RED_PIN, GREEN_PIN, BLUE_PIN, SHARED_SECRET);
     return 0;
+}
+
+int count_valid_lines(const char *config_file) {
+    FILE *file = fopen(config_file, "r");
+    if (file == NULL) {
+        perror("Failed to open config file");
+        return -1;
+    }
+
+    int count = 0;
+    char line[256];
+    while (fgets(line, sizeof(line), file) != NULL) {
+        if (line[0] == '#') {
+            count++;
+        }
+    }
+
+    fclose(file);
+    return count;
+}
+
+void parse_openrgb_config_devices(const char *config_file) {
+    int device_count = count_valid_lines(config_file);
+    if (device_count <= 0) {
+        logger("No valid devices found in the config file. Re/Create OpenRGB config using openrgb_configurator!\n");
+        return;
+    }
+    openrgb_using_devices_num = device_count;
+
+    openrgb_devices_to_change = malloc(sizeof(struct openrgb_device) * device_count);
+
+    FILE *file = fopen(config_file, "r");
+    if (file == NULL) {
+        logger("Failed to open config file");
+        return;
+    }
+
+    char line[256];
+    uint8_t device = 0;
+    while (fgets(line, sizeof(line), file) != NULL) {
+        if (line[0] != '#') {
+            continue;
+        }
+
+        uint8_t *content = line + 1;
+        while (*content == ' ' || *content == '\t')
+            content++;
+
+        char *colon_pos = strchr(content, ':');
+        if (colon_pos == NULL) {
+            fprintf(stderr, "Invalid line format: %s", line);
+            continue;
+        }
+
+        *colon_pos = '\0';
+        int number = atoi(content);
+
+        char *name = colon_pos + 1;
+        while (*name == ' ' || *name == '\t')
+            name++;
+
+        char *newline = strchr(name, '\n');
+        if (newline != NULL)
+            *newline = '\0';
+        openrgb_devices_to_change[device].device_id = number;
+        openrgb_devices_to_change[device].name = malloc(strlen(name) + 1);
+        strcpy(openrgb_devices_to_change[device++].name, name);
+    }
+
+    fclose(file);
 }
 
 struct section_sizes get_section_sizes(uint8_t version) {

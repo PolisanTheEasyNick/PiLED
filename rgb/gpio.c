@@ -17,8 +17,7 @@ void set_color(int pi, struct Color color) {
     set_PWM_dutycycle(pi, GREEN_PIN, color.GREEN);
     set_PWM_dutycycle(pi, BLUE_PIN, color.BLUE);
 
-    openrgb_request_update_leds(2, color);
-    openrgb_request_update_leds(4, color);
+    openrgb_set_color_on_devices(color);
 }
 
 void set_color_duration(int pi, struct Color color, uint8_t duration) {
