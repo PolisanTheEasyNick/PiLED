@@ -15,6 +15,7 @@
 void handle_sigint(int sig) {
     logger("Stopping server!");
     stop_server = 1;
+    openrgb_stop_server = 1;
 }
 
 char config_file[256];
@@ -91,13 +92,12 @@ int load_config() {
 
 int main(int argc, char *argv[]) {
     signal(SIGINT, handle_sigint);
-    openrgb_init();
-    // printf("Got controllers: %d", controllers);
-    pthread_join(openrgb_recv_thread_id, NULL);
+
     if (load_config() != 0) {
         return -1;
     }
 
+    openrgb_init();
     parse_args(argc, argv);
 
     int pi = pigpio_start(PI_ADDR, PI_PORT);
@@ -120,6 +120,7 @@ int main(int argc, char *argv[]) {
 
     logger("See you next time!");
     pigpio_stop(pi);
+    openrgb_shutdown();
     free(PI_ADDR);
     free(PI_PORT);
     free(SHARED_SECRET);

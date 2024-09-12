@@ -11,5 +11,6 @@ struct Color {
 
 void handle_error(const char *msg);
 void logger(const char *format, ...);
+void logger_debug(const char *format, ...);
 
 #endif // UTILS_H

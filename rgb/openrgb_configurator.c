@@ -1,0 +1,86 @@
+#include "openrgb.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <termios.h>
+#include <unistd.h>
+
+void display_menu(bool selected[], int current_device) {
+    for (int i = 0; i < openrgb_devices_num; i++) {
+        printf("%s Device #%d: %s by %s\n", (i == current_device) ? "->" : "  ", i, openrgb_controllers[i].name,
+               openrgb_controllers[i].vendor);
+
+        printf("   [%c] Name: %s, Vendor: %s\n", selected[i] ? 'x' : ' ', openrgb_controllers[i].name,
+               openrgb_controllers[i].vendor);
+    }
+}
+
+void save_selected_devices(bool selected[]) {
+    FILE *file = fopen("selected_devices.txt", "w");
+    if (file == NULL) {
+        perror("Failed to open file");
+        return;
+    }
+
+    for (int i = 0; i < openrgb_devices_num; i++) {
+        if (selected[i]) {
+            fprintf(file, "Device #%d: %s by %s\n", i, openrgb_controllers[i].name, openrgb_controllers[i].vendor);
+        }
+    }
+
+    fclose(file);
+    printf("Selected devices saved to 'selected_devices.txt'.\n");
+}
+
+// https://stackoverflow.com/a/16361724
+char getch(void) {
+    char buf = 0;
+    struct termios old = {0};
+    fflush(stdout);
+    if (tcgetattr(0, &old) < 0)
+        perror("tcsetattr()");
+    old.c_lflag &= ~ICANON;
+    old.c_lflag &= ~ECHO;
+    old.c_cc[VMIN] = 1;
+    old.c_cc[VTIME] = 0;
+    if (tcsetattr(0, TCSANOW, &old) < 0)
+        perror("tcsetattr ICANON");
+    if (read(0, &buf, 1) < 0)
+        perror("read()");
+    old.c_lflag |= ICANON;
+    old.c_lflag |= ECHO;
+    if (tcsetattr(0, TCSADRAIN, &old) < 0)
+        perror("tcsetattr ~ICANON");
+    return buf;
+}
+
+int main() {
+    openrgb_init();
+    bool selected[openrgb_devices_num];
+    memset(selected, false, sizeof(selected));
+    int current_device = 0;
+    char input;
+
+    while (1) {
+        system("clear");
+        display_menu(selected, current_device);
+
+        printf("\nUse arrow keys to navigate, space to toggle, 'q' to quit and save.\n");
+
+        input = getch();
+        if (input == 'q') {
+            break;
+        } else if (input == ' ') {
+            selected[current_device] = !selected[current_device];
+        } else if (input == 'w' || input == 65) {
+            current_device = (current_device - 1 + openrgb_devices_num) % openrgb_devices_num;
+        } else if (input == 's' || input == 66) {
+            current_device = (current_device + 1) % openrgb_devices_num;
+        }
+    }
+
+    save_selected_devices(selected);
+
+    openrgb_shutdown();
+}

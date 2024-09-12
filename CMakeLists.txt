@@ -35,6 +35,13 @@ if(NOT pigpio_FOUND)
   add_dependencies(piled pigpiod_if2) #is there cleaner way to make submodule build??? 
 endif()
 
+add_executable(openrgb_configurator
+  rgb/openrgb_configurator.c
+  rgb/openrgb.h rgb/openrgb.c
+  globals/globals.h globals/globals.c
+  utils/utils.h utils/utils.c
+)
+
 include(GNUInstallDirs)
 install(TARGETS piled
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

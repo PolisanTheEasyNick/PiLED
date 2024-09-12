@@ -2,6 +2,7 @@
 #include "../globals/globals.h"
 #include "../server/server.h"
 #include "../utils/utils.h"
+#include "openrgb.h"
 #include "pigpiod_if2.h"
 #include <stdint.h>
 #include <unistd.h>
@@ -15,6 +16,9 @@ void set_color(int pi, struct Color color) {
     set_PWM_dutycycle(pi, RED_PIN, color.RED);
     set_PWM_dutycycle(pi, GREEN_PIN, color.GREEN);
     set_PWM_dutycycle(pi, BLUE_PIN, color.BLUE);
+
+    openrgb_request_update_leds(2, color);
+    openrgb_request_update_leds(4, color);
 }
 
 void set_color_duration(int pi, struct Color color, uint8_t duration) {

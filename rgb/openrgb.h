@@ -3,6 +3,7 @@
 
 #include "../utils/utils.h"
 #include <pthread.h>
+#include <signal.h>
 #include <stdint.h>
 
 // Packet ID
@@ -32,6 +33,7 @@ extern int8_t openrgb_using_version;
 extern int32_t openrgb_devices_num;
 extern struct openrgb_controller_data *openrgb_controllers;
 extern int8_t openrgb_parsed_all_devices;
+extern volatile sig_atomic_t openrgb_stop_server;
 
 struct openrgb_controller_data {
     // NET_PACKET_ID_REQUEST_CONTROLLER_DATA response type for version 3 of OpenRGB SDK
@@ -56,15 +58,15 @@ struct openrgb_controller_data {
     uint16_t location_len; // Length of RGBController location field string, including null termination
     uint8_t *location;     // RGBController location field string value, including null termination
 
-    uint16_t num_modes;  // Number of modes in RGBController
-    uint8_t active_mode; // RGBController active_mode field value
-    uint8_t *modes;      // See Mode Data block format table.  Repeat num_modes times
+    uint16_t num_modes;              // Number of modes in RGBController
+    uint8_t active_mode;             // RGBController active_mode field value
+    struct openrgb_mode_data *modes; // See Mode Data block format table.  Repeat num_modes times
 
-    uint16_t num_zones; // Number of zones in RGBController
-    uint8_t *zones;     // See Zone Data block format table.  Repeat num_zones times
+    uint16_t num_zones;              // Number of zones in RGBController
+    struct openrgb_zone_data *zones; // See Zone Data block format table.  Repeat num_zones times
 
-    uint16_t num_leds; // Number of LEDs in RGBController
-    uint8_t *leds;     // See LED Data block format table.  Repeat num_leds times
+    uint16_t num_leds;             // Number of LEDs in RGBController
+    struct openrgb_led_data *leds; // See LED Data block format table.  Repeat num_leds times
 
     uint16_t num_colors; // Number of colors in RGBController
     uint8_t *colors;     // RGBController colors field values
@@ -110,6 +112,7 @@ struct openrgb_led_data {
 
 void openrgb_init_header(uint8_t **header, uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size);
 void openrgb_init();
+void openrgb_shutdown();
 void openrgb_request_protocol_version();
 void openrgb_set_client_name();
 void openrgb_request_controller_count();
@@ -117,8 +120,5 @@ void openrgb_request_controller_data(uint32_t pkt_dev_idx);
 void openrgb_request_update_leds(uint32_t pkt_dev_idx, struct Color color);
 
 void *openrgb_recv_thread(void *arg);
-
-// free functions
-void free_openrgb_controller_data(struct openrgb_controller_data *data);
 
 #endif
