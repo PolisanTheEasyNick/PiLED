@@ -1,16 +1,11 @@
 #ifndef GPIO_H
 #define GPIO_H
 
+#include "../utils/utils.h"
 #include <pthread.h>
 #include <stdint.h>
 
 #define TRANSITION_STEPS 100
-
-struct Color {
-    uint8_t RED;
-    uint8_t GREEN;
-    uint8_t BLUE;
-};
 
 struct fade_animation_args {
     int pi;

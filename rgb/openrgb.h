@@ -1,6 +1,7 @@
 #ifndef OPENRGB_H
 #define OPENRGB_H
 
+#include "gpio.h"
 #include <pthread.h>
 #include <stdint.h>
 
@@ -28,7 +29,9 @@ extern int openrgb_socket;
 extern pthread_t openrgb_recv_thread_id;
 extern pthread_mutex_t openrgb_send_mutex;
 extern int8_t openrgb_using_version;
-extern uint8_t openrgb_set_clientname;
+extern int32_t openrgb_devices_num;
+extern struct openrgb_controller_data *openrgb_controllers;
+extern int8_t openrgb_parsed_all_devices;
 
 struct openrgb_controller_data {
     // NET_PACKET_ID_REQUEST_CONTROLLER_DATA response type for version 3 of OpenRGB SDK
@@ -109,11 +112,10 @@ void openrgb_init_header(uint8_t **header, uint32_t pkt_dev_idx, uint32_t pkt_id
 void openrgb_init();
 void openrgb_request_protocol_version();
 void openrgb_set_client_name();
+void openrgb_request_controller_count();
+void openrgb_request_controller_data(uint32_t pkt_dev_idx);
+void openrgb_request_set_color(uint32_t pkt_dev_idx, struct Color color);
 
-uint8_t *generate_packet(uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size, const uint8_t *data);
-
-uint32_t request_controller_count();
-struct openrgb_controller_data openrgb_request_controller_data(uint32_t pkt_dev_idx);
 void *openrgb_recv_thread(void *arg);
 
 // free functions
