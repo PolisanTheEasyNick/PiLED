@@ -65,17 +65,26 @@ void openrgb_init() {
     logger_debug("Created socket.");
 
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(6742);
-    if (inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr) <= 0) {
-        logger_debug("Invalid OpenRGB server's IP address or IP address not supported");
-        close(openrgb_socket);
-        return;
+    server_addr.sin_port = htons(OPENRGB_PORT);
+
+    uint8_t connected = 0;
+    while (!connected && !openrgb_stop_server) {
+        if (inet_pton(AF_INET, OPENRGB_SERVER, &server_addr.sin_addr) <= 0) {
+            logger_debug("Invalid OpenRGB server's IP address or IP address not supported");
+            close(openrgb_socket);
+            sleep(30);
+            continue;
+        }
+
+        if (connect(openrgb_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+            logger_debug("Connection failed");
+            sleep(30);
+            continue;
+        } else {
+            connected = 1;
+        }
     }
 
-    if (connect(openrgb_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        logger_debug("Connection failed");
-        return;
-    }
     logger_debug("Connected to OpenRGB Server.");
 
     // at this state we successfully connected to OpenRGB server, starting recv thread
@@ -614,4 +623,45 @@ void openrgb_shutdown() {
             free(openrgb_devices_to_change[i].name);
     }
     free(openrgb_devices_to_change);
+}
+
+void *openrgb_connect(void *arg) {
+    struct sockaddr_in server_addr;
+    int openrgb_socket_local;
+    while (!openrgb_stop_server) {
+        openrgb_socket_local = socket(AF_INET, SOCK_STREAM, 0);
+        if (openrgb_socket_local < 0) {
+            perror("Socket creation failed");
+            sleep(1);
+            continue;
+        }
+
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(OPENRGB_PORT);
+        if (inet_pton(AF_INET, OPENRGB_SERVER, &server_addr.sin_addr) <= 0) {
+            logger_debug("Invalid OpenRGB server's IP address or IP address not supported");
+            close(openrgb_socket_local);
+            sleep(1);
+            continue;
+        }
+
+        // Attempt to connect to the server
+        if (connect(openrgb_socket_local, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+            logger_debug("Connection failed");
+            close(openrgb_socket_local);
+            sleep(1);
+            continue; // Retry after 1 second
+        }
+
+        // If connected successfully
+        logger_debug("Connected to OpenRGB server");
+        openrgb_socket = openrgb_socket_local; // Update the global socket variable
+        return NULL;                           // Exit the thread function
+    }
+
+    if (openrgb_stop_server) {
+        logger_debug("Stopped trying to connect to server");
+    }
+
+    return NULL;
 }

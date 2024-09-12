@@ -223,35 +223,46 @@ uint8_t parse_config(const char *config_file) {
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
-    RED_PIN = RED_PIN;
 
     if (!config_lookup_int(&cfg, "GREEN_PIN", &GREEN_PIN)) {
         fprintf(stderr, "Missing GREEN_PIN in config file!\n");
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
-    GREEN_PIN = GREEN_PIN;
-
     if (!config_lookup_int(&cfg, "BLUE_PIN", &BLUE_PIN)) {
         fprintf(stderr, "Missing BLUE_PIN in config file!\n");
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
-    BLUE_PIN = BLUE_PIN;
-
     const char *secret;
     if (!config_lookup_string(&cfg, "SHARED_SECRET", &secret)) {
         fprintf(stderr, "Missing SHARED_SECRET in config file\n");
         SHARED_SECRET = NULL;
         return -1;
     }
-    SHARED_SECRET = malloc(strlen(secret));
-    strncpy(SHARED_SECRET, secret, strlen(secret));
+    SHARED_SECRET = malloc(strlen(secret) + 1);
+    strcpy(SHARED_SECRET, secret);
     SHARED_SECRET[strlen(secret)] = 0;
 
+    const char *openrgb_addr;
+    if (!config_lookup_string(&cfg, "OPENRGB_SERVER", &openrgb_addr)) {
+        fprintf(stderr, "Missing OPENRGB_SERVER in config file, using default 127.0.0.1\n");
+        OPENRGB_SERVER = malloc(strlen("127.0.0.1") + 1);
+        strcpy(OPENRGB_SERVER, "127.0.0.1");
+    } else {
+        OPENRGB_SERVER = malloc(strlen(openrgb_addr) + 1);
+        strcpy(OPENRGB_SERVER, openrgb_addr);
+    }
+
+    if (!config_lookup_int(&cfg, "OPENRGB_PORT", &OPENRGB_PORT)) {
+        fprintf(stderr, "Missing OPENRGB_PORT in config file!\n");
+        config_destroy(&cfg);
+        exit(EXIT_FAILURE);
+    }
+
     logger("Passed config:\nRaspberry Pi address: %s\nPort: %s\nRed pin: %d\nGreen pin: %d\nBlue pin: %d\nShared "
-           "secret: %s",
-           PI_ADDR, PI_PORT, RED_PIN, GREEN_PIN, BLUE_PIN, SHARED_SECRET);
+           "secret: %s\nOpenRGB server: %s\nOpenRGB Port: %d\n",
+           PI_ADDR, PI_PORT, RED_PIN, GREEN_PIN, BLUE_PIN, SHARED_SECRET, OPENRGB_SERVER, OPENRGB_PORT);
     config_destroy(&cfg);
     return 0;
 }

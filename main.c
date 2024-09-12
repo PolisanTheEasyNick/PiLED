@@ -28,9 +28,11 @@ void parse_args(int argc, char *argv[]) {
                                            {"GREEN", required_argument, 0, 'G'},
                                            {"BLUE", required_argument, 0, 'B'},
                                            {"SHARED_SECRET", required_argument, 0, 'S'},
+                                           {"OPENRGB_SERVER", required_argument, 0, 'O'},
+                                           {"OPENRGB_PORT", required_argument, 0, 'P'},
                                            {0, 0, 0, 0}};
 
-    while ((opt = getopt_long(argc, argv, "c:s:p:R:G:B:S:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "c:s:p:R:G:B:S:O:P:", long_options, NULL)) != -1) {
         switch (opt) {
         case 's':
             snprintf(PI_ADDR, sizeof(PI_ADDR), "%s", optarg);
@@ -56,6 +58,16 @@ void parse_args(int argc, char *argv[]) {
             snprintf(SHARED_SECRET, sizeof(SHARED_SECRET), "%s", optarg);
             logger("Shared secret set to: %s", SHARED_SECRET);
             break;
+        case 'O': {
+            snprintf(OPENRGB_SERVER, sizeof(OPENRGB_SERVER), "%s", optarg);
+            logger("OpenRGB server address set to: %s", OPENRGB_SERVER);
+            break;
+        }
+        case 'P': {
+            OPENRGB_PORT = atoi(optarg);
+            logger("OpenRGB Server port set to: %d", OPENRGB_PORT);
+            break;
+        }
         default:
             logger("Unknown option or missing argument. Exiting.");
             exit(EXIT_FAILURE);
@@ -97,8 +109,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    openrgb_init();
     parse_args(argc, argv);
+
+    openrgb_init();
 
     int pi = pigpio_start(PI_ADDR, PI_PORT);
     if (pi < 0) {
@@ -124,5 +137,6 @@ int main(int argc, char *argv[]) {
     free(PI_ADDR);
     free(PI_PORT);
     free(SHARED_SECRET);
+    free(OPENRGB_SERVER);
     return 0;
 }

@@ -120,5 +120,6 @@ void openrgb_request_controller_data(uint32_t pkt_dev_idx);
 void openrgb_request_update_leds(uint32_t pkt_dev_idx, struct Color color);
 void openrgb_set_color_on_devices(struct Color color);
 void *openrgb_recv_thread(void *arg);
+void *openrgb_connect(void *arg);
 
 #endif
