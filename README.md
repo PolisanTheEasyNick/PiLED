@@ -2,20 +2,13 @@
 
 This project used for installing on Raspberry Pi.  
 LED Strip is connected to Raspberry Pi GPIO pins.  
-This program opens TCP server on port 3384 and waits for plain TCP packets, created as described here:
+This program opens TCP server on port 3384 and waits for plain TCP packets, created as described below.  
 
-## TODO:
-- [x] Basic color change
-- [x] Protocol parser with all needed checks
-- [x] Setting up pigpio and setting color to pins
-- [x] Use config file
-- [x] Some basic animations support  
-- [x] Get current color support in protocol
-- [ ] OpenRGB SDK support (connect to server, get devices, choose where to set and set colors on them too)
-- [x] Use config file from home directory
-- [x] systemd service
-
-
+## Features:
+* Basic color change
+* Smooth color change from current color to desired with given timing
+* Fade and Pulse animations
+* OpenRGB SDK support (refer to [OpenRGB](#openrgb) section)
 
 LED PROTOCOL v4
 Simply contains `HEADER` + `HMAC-SHA-256` + `PAYLOAD`  
@@ -111,10 +104,26 @@ Start PULSE animation. In `PAYLOAD` must be provided color fields and `Duration`
 * `libconfig`
   
 ## Building and Running
-* `git clone --recursive https://github.com/PolisanTheEasyNick/led-server`
-* `cd led-server`
+* `git clone --recursive https://github.com/PolisanTheEasyNick/PiLED`
+* `cd PiLED`
 * `mkdir build`
 * `cd build`
 * `cmake ..`
 * `make`
-* `./led-server`
+* `./piled`  
+
+You can also install piled to your system using:  
+`sudo make install`  
+which will copy executable to `${CMAKE_INSTALL_BINDIR}`, which often refers to `/usr/local/bin/piled` along with config file copy at `/etc/piled/piled.conf` and systemd service file at `/etc/systemd/system/piled.service`.  
+
+## Configuring
+You can configure PiLED by editing config file /etc/piled/piled.conf or by copying him into ~/.config/piled.conf and editing at home dir.  
+Note that systemd service is running from `nobody` user so it may not find your home directory by $HOME.  
+If you want OpenRGB device changing too, do not forget to define `OPENRGB_SERVER` at config file and run `openrgb_configurator` as described at [OpenRGB](#openrgb) section.  
+
+## OpenRGB
+PiLED supports connecting to OpenRGB server for setting current color to PC's controllers.  
+For configuring OpenRGB you need to specify OpenRGB server IP and port.  
+Then you need to run `openrgb_configurator` executable with root perms, which is built along with `piled`.  
+Root is needed because configurator will create file with your picked PC's controllers at `/etc/piled/openrgb_config` (and later will be read by systemd service, for example).  
+After OpenRGB is set, any requests for changing color to PiLED would be automatically retranslated to OpenRGB server and your PC will be in-sync with PiLED.  

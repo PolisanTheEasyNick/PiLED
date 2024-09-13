@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include <time.h>
 
 struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, unsigned char *PARSED_HMAC) {
@@ -200,7 +201,7 @@ uint8_t parse_config(const char *config_file) {
         fprintf(stderr, "Missing PI_ADDR in config file, using default (NULL)\n");
         PI_ADDR = NULL;
     } else {
-        PI_ADDR = malloc(strlen(addr));
+        PI_ADDR = malloc(strlen(addr) + 1);
         strncpy(PI_ADDR, addr, strlen(addr));
         PI_ADDR[strlen(addr)] = 0;
     }
@@ -210,7 +211,7 @@ uint8_t parse_config(const char *config_file) {
         fprintf(stderr, "Missing PI_PORT in config file, using default (8888)\n");
         PI_PORT = NULL;
     } else {
-        PI_PORT = malloc(strlen(port));
+        PI_PORT = malloc(strlen(port) + 1);
         strncpy(PI_PORT, port, strlen(port));
         PI_PORT[strlen(port)] = 0;
     }
@@ -220,35 +221,117 @@ uint8_t parse_config(const char *config_file) {
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
-    RED_PIN = RED_PIN;
 
     if (!config_lookup_int(&cfg, "GREEN_PIN", &GREEN_PIN)) {
         fprintf(stderr, "Missing GREEN_PIN in config file!\n");
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
-    GREEN_PIN = GREEN_PIN;
-
     if (!config_lookup_int(&cfg, "BLUE_PIN", &BLUE_PIN)) {
         fprintf(stderr, "Missing BLUE_PIN in config file!\n");
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
-    BLUE_PIN = BLUE_PIN;
-
     const char *secret;
     if (!config_lookup_string(&cfg, "SHARED_SECRET", &secret)) {
         fprintf(stderr, "Missing SHARED_SECRET in config file\n");
         SHARED_SECRET = NULL;
+        return -1;
     }
-    SHARED_SECRET = malloc(strlen(secret));
+    SHARED_SECRET = malloc(strlen(secret) + 1);
     strncpy(SHARED_SECRET, secret, strlen(secret));
     SHARED_SECRET[strlen(secret)] = 0;
 
+    const char *openrgb_addr;
+    if (!config_lookup_string(&cfg, "OPENRGB_SERVER", &openrgb_addr)) {
+        fprintf(stderr, "Missing OPENRGB_SERVER in config file\n");
+        OPENRGB_SERVER = NULL;
+    } else {
+        OPENRGB_SERVER = malloc(strlen(openrgb_addr) + 1);
+        strncpy(OPENRGB_SERVER, openrgb_addr, strlen(openrgb_addr));
+        OPENRGB_SERVER[strlen(openrgb_addr)] = 0;
+    }
+
+    if (!config_lookup_int(&cfg, "OPENRGB_PORT", &OPENRGB_PORT)) {
+        fprintf(stderr, "Missing OPENRGB_PORT in config file, using default 6742\n");
+        OPENRGB_PORT = 6742;
+    }
+
     logger("Passed config:\nRaspberry Pi address: %s\nPort: %s\nRed pin: %d\nGreen pin: %d\nBlue pin: %d\nShared "
-           "secret: %s",
-           PI_ADDR, PI_PORT, RED_PIN, GREEN_PIN, BLUE_PIN, SHARED_SECRET);
+           "secret: %s\nOpenRGB server: %s\nOpenRGB Port: %d\n",
+           PI_ADDR, PI_PORT, RED_PIN, GREEN_PIN, BLUE_PIN, SHARED_SECRET, OPENRGB_SERVER, OPENRGB_PORT);
+    config_destroy(&cfg);
     return 0;
+}
+
+int count_valid_lines(const char *config_file) {
+    FILE *file = fopen(config_file, "r");
+    if (file == NULL) {
+        perror("Failed to open config file");
+        return -1;
+    }
+
+    int count = 0;
+    char line[256];
+    while (fgets(line, sizeof(line), file) != NULL) {
+        if (line[0] == '#') {
+            count++;
+        }
+    }
+
+    fclose(file);
+    return count;
+}
+
+void parse_openrgb_config_devices(const char *config_file) {
+    int device_count = count_valid_lines(config_file);
+    if (device_count <= 0) {
+        logger("No valid devices found in the config file. Re/Create OpenRGB config using openrgb_configurator!\n");
+        return;
+    }
+    openrgb_using_devices_num = device_count;
+
+    openrgb_devices_to_change = malloc(sizeof(struct openrgb_device) * device_count);
+
+    FILE *file = fopen(config_file, "r");
+    if (file == NULL) {
+        logger("Failed to open config file");
+        return;
+    }
+
+    uint8_t line[256];
+    uint8_t device = 0;
+    while (fgets((char *)line, sizeof(line), file) != NULL) {
+        if (line[0] != '#') {
+            continue;
+        }
+
+        uint8_t *content = line + 1;
+        while (*content == ' ' || *content == '\t')
+            content++;
+
+        uint8_t *colon_pos = (uint8_t *)strchr((char *)content, ':');
+        if (colon_pos == NULL) {
+            fprintf(stderr, "Invalid line format: %s", line);
+            continue;
+        }
+
+        *colon_pos = '\0';
+        int number = atoi((const char *)content);
+
+        uint8_t *name = colon_pos + 1;
+        while (*name == ' ' || *name == '\t')
+            name++;
+
+        uint8_t *newline = (uint8_t *)strchr((char *)name, '\n');
+        if (newline != NULL)
+            *newline = '\0';
+        openrgb_devices_to_change[device].device_id = number;
+        openrgb_devices_to_change[device].name = malloc(strlen((char *)name) + 1);
+        strcpy((char *)openrgb_devices_to_change[device++].name, (char *)name);
+    }
+
+    fclose(file);
 }
 
 struct section_sizes get_section_sizes(uint8_t version) {

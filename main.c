@@ -2,9 +2,11 @@
 #include "parser/parser.h"
 #include "pigpiod_if2.h"
 #include "rgb/gpio.h"
+#include "rgb/openrgb.h"
 #include "server/server.h"
 #include "utils/utils.h"
 #include <getopt.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +15,8 @@
 void handle_sigint(int sig) {
     logger("Stopping server!");
     stop_server = 1;
+    openrgb_stop_server = 1;
+    openrgb_exit = 1;
 }
 
 char config_file[256];
@@ -25,9 +29,11 @@ void parse_args(int argc, char *argv[]) {
                                            {"GREEN", required_argument, 0, 'G'},
                                            {"BLUE", required_argument, 0, 'B'},
                                            {"SHARED_SECRET", required_argument, 0, 'S'},
+                                           {"OPENRGB_SERVER", required_argument, 0, 'O'},
+                                           {"OPENRGB_PORT", required_argument, 0, 'P'},
                                            {0, 0, 0, 0}};
 
-    while ((opt = getopt_long(argc, argv, "c:s:p:R:G:B:S:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "c:s:p:R:G:B:S:O:P:", long_options, NULL)) != -1) {
         switch (opt) {
         case 's':
             snprintf(PI_ADDR, sizeof(PI_ADDR), "%s", optarg);
@@ -53,6 +59,16 @@ void parse_args(int argc, char *argv[]) {
             snprintf(SHARED_SECRET, sizeof(SHARED_SECRET), "%s", optarg);
             logger("Shared secret set to: %s", SHARED_SECRET);
             break;
+        case 'O': {
+            snprintf(OPENRGB_SERVER, sizeof(OPENRGB_SERVER), "%s", optarg);
+            logger("OpenRGB server address set to: %s", OPENRGB_SERVER);
+            break;
+        }
+        case 'P': {
+            OPENRGB_PORT = atoi(optarg);
+            logger("OpenRGB Server port set to: %d", OPENRGB_PORT);
+            break;
+        }
         default:
             logger("Unknown option or missing argument. Exiting.");
             exit(EXIT_FAILURE);
@@ -79,7 +95,7 @@ int load_config() {
         return 0;
     }
 
-    if (try_load_config("/etc/config/piled.conf") != 0) {
+    if (try_load_config("/etc/piled/piled.conf") != 0) {
         logger("Can't load any of the configs! Aborting.");
         return -1;
     }
@@ -95,6 +111,13 @@ int main(int argc, char *argv[]) {
     }
 
     parse_args(argc, argv);
+
+    if (OPENRGB_SERVER) {
+        logger("OpenRGB server IP is set, starting OpenRGB!");
+        openrgb_init();
+    } else {
+        logger("Not starting OpenRGB since OpenRGB server IP not set.");
+    }
 
     int pi = pigpio_start(PI_ADDR, PI_PORT);
     if (pi < 0) {
@@ -113,10 +136,13 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to start server\n");
         return 1;
     }
+
     logger("See you next time!");
     pigpio_stop(pi);
+    openrgb_shutdown();
     free(PI_ADDR);
     free(PI_PORT);
     free(SHARED_SECRET);
+    free(OPENRGB_SERVER);
     return 0;
 }

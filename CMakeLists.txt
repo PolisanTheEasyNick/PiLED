@@ -26,6 +26,7 @@ add_executable(piled
   utils/utils.h utils/utils.c
   parser/parser.h parser/parser.c
   rgb/gpio.h rgb/gpio.c
+  rgb/openrgb.h rgb/openrgb.c
   globals/globals.h globals/globals.c
 )
 
@@ -33,6 +34,14 @@ target_link_libraries(piled OpenSSL::SSL config ${CMAKE_THREAD_LIBS_INIT} ${pigp
 if(NOT pigpio_FOUND)
   add_dependencies(piled pigpiod_if2) #is there cleaner way to make submodule build??? 
 endif()
+
+add_executable(openrgb_configurator
+  rgb/openrgb_configurator.c
+  rgb/openrgb.h rgb/openrgb.c
+  globals/globals.h globals/globals.c
+  utils/utils.h utils/utils.c
+)
+target_compile_definitions(openrgb_configurator PRIVATE ORGBCONFIGURATOR)
 
 include(GNUInstallDirs)
 install(TARGETS piled
@@ -44,6 +53,7 @@ if(EXISTS "/etc/systemd/system")
     DESTINATION /etc/systemd/system)
 endif()
 
-
+install(DIRECTORY DESTINATION /etc/piled
+  DIRECTORY_PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/piled.conf
-  DESTINATION /etc/config)
+  DESTINATION /etc/piled/)

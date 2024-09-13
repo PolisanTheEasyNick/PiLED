@@ -22,6 +22,7 @@ struct section_sizes {
 
 struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]);
 uint8_t parse_config(const char *config_file);
+void parse_openrgb_config_devices(const char *config_file);
 struct section_sizes get_section_sizes(uint8_t version);
 
 #endif // PARSER_H
