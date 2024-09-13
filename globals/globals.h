@@ -16,6 +16,7 @@ extern int GREEN_PIN;
 extern int BLUE_PIN;
 extern char *OPENRGB_SERVER;
 extern int OPENRGB_PORT;
+extern char config_file[256];
 
 extern struct openrgb_device *openrgb_devices_to_change; // defined in openrgb.c
 extern int32_t openrgb_using_devices_num;                // defined in openrgb.c

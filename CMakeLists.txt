@@ -25,6 +25,7 @@ add_executable(piled
   server/server.h server/server.c
   utils/utils.h utils/utils.c
   parser/parser.h parser/parser.c
+  parser/config.h parser/config.c
   rgb/gpio.h rgb/gpio.c
   rgb/openrgb.h rgb/openrgb.c
   globals/globals.h globals/globals.c
@@ -39,9 +40,10 @@ add_executable(openrgb_configurator
   rgb/openrgb_configurator.c
   rgb/openrgb.h rgb/openrgb.c
   globals/globals.h globals/globals.c
+  parser/config.h parser/config.c
   utils/utils.h utils/utils.c
 )
-target_link_libraries(openrgb_configurator ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(openrgb_configurator config ${CMAKE_THREAD_LIBS_INIT})
 target_compile_definitions(openrgb_configurator PRIVATE ORGBCONFIGURATOR)
 
 include(GNUInstallDirs)

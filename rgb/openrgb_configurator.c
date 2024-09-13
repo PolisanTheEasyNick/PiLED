@@ -1,3 +1,5 @@
+#include "../globals/globals.h"
+#include "../parser/config.h"
 #include "openrgb.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -59,8 +61,20 @@ char getch(void) {
     return buf;
 }
 
-int main() {
-    openrgb_init();
+int main(int argc, char *argv[]) {
+    if (load_config() != 0) {
+        return -1;
+    }
+
+    parse_args(argc, argv);
+
+    if (OPENRGB_SERVER) {
+        openrgb_init();
+    } else {
+        logger("OpenRGB server ip not set! Aborting.");
+        return -1;
+    }
+
     bool selected[openrgb_devices_num];
     memset(selected, false, sizeof(selected));
     int current_device = 0;
