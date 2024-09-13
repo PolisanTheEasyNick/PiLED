@@ -112,7 +112,12 @@ int main(int argc, char *argv[]) {
 
     parse_args(argc, argv);
 
-    openrgb_init();
+    if (OPENRGB_SERVER) {
+        logger("OpenRGB server IP is set, starting OpenRGB!");
+        openrgb_init();
+    } else {
+        logger("Not starting OpenRGB since OpenRGB server IP not set.");
+    }
 
     int pi = pigpio_start(PI_ADDR, PI_PORT);
     if (pi < 0) {

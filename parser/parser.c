@@ -244,10 +244,8 @@ uint8_t parse_config(const char *config_file) {
 
     const char *openrgb_addr;
     if (!config_lookup_string(&cfg, "OPENRGB_SERVER", &openrgb_addr)) {
-        fprintf(stderr, "Missing OPENRGB_SERVER in config file, using default 127.0.0.1\n");
-        OPENRGB_SERVER = malloc(strlen("127.0.0.1") + 1);
-        strncpy(OPENRGB_SERVER, "127.0.0.1", strlen("127.0.0.1"));
-        OPENRGB_SERVER[strlen("127.0.0.1")] = 0;
+        fprintf(stderr, "Missing OPENRGB_SERVER in config file\n");
+        OPENRGB_SERVER = NULL;
     } else {
         OPENRGB_SERVER = malloc(strlen(openrgb_addr) + 1);
         strncpy(OPENRGB_SERVER, openrgb_addr, strlen(openrgb_addr));
@@ -255,9 +253,8 @@ uint8_t parse_config(const char *config_file) {
     }
 
     if (!config_lookup_int(&cfg, "OPENRGB_PORT", &OPENRGB_PORT)) {
-        fprintf(stderr, "Missing OPENRGB_PORT in config file!\n");
-        config_destroy(&cfg);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "Missing OPENRGB_PORT in config file, using default 6742\n");
+        OPENRGB_PORT = 6742;
     }
 
     logger("Passed config:\nRaspberry Pi address: %s\nPort: %s\nRed pin: %d\nGreen pin: %d\nBlue pin: %d\nShared "
