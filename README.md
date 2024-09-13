@@ -118,7 +118,7 @@ which will copy executable to `${CMAKE_INSTALL_BINDIR}`, which often refers to `
 
 ## Configuring
 You can configure PiLED by editing config file /etc/piled/piled.conf or by copying him into ~/.config/piled.conf and editing at home dir.  
-Note that systemd service is running from `nobody` user so it may not find your home directory by $HOME.  
+Note that systemd service is not running as any user so it may not find your home directory by $HOME.  
 If you want OpenRGB device changing too, do not forget to define `OPENRGB_SERVER` at config file and run `openrgb_configurator` as described at [OpenRGB](#openrgb) section.  
 
 ## OpenRGB
