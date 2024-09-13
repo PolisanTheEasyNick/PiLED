@@ -1,4 +1,5 @@
 # PiLED
+![C Build](https://github.com/PolisanTheEasyNick/PiLED/actions/workflows/c.yml/badge.svg)  
 This project used for installing on Raspberry Pi.  
 LED Strip is connected to Raspberry Pi GPIO pins.  
 This program opens TCP server on port 3384 and waits for plain TCP packets, created as described below.  
