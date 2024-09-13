@@ -41,6 +41,7 @@ add_executable(openrgb_configurator
   globals/globals.h globals/globals.c
   utils/utils.h utils/utils.c
 )
+target_link_libraries(openrgb_configurator ${CMAKE_THREAD_LIBS_INIT})
 target_compile_definitions(openrgb_configurator PRIVATE ORGBCONFIGURATOR)
 
 include(GNUInstallDirs)
