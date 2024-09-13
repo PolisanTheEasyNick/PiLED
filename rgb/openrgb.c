@@ -24,7 +24,7 @@ int32_t openrgb_devices_num = -1;
 int32_t openrgb_using_devices_num = 0;
 int8_t openrgb_parsed_all_devices = -1;
 struct openrgb_controller_data *openrgb_controllers;
-volatile sig_atomic_t openrgb_stop_server = 0, openrgb_needs_reinit = 0;
+volatile sig_atomic_t openrgb_stop_server = 0, openrgb_needs_reinit = 0, openrgb_exit = 0;
 struct openrgb_device *openrgb_devices_to_change;
 
 void openrgb_init_header(uint8_t *header, uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size) {
@@ -177,11 +177,11 @@ void openrgb_request_protocol_version() {
     }
     printf("\n");
 #endif
-    send(openrgb_socket, header, 16, 0);
+    send(openrgb_socket, header, 16, MSG_NOSIGNAL);
 #ifdef DEBUG
     printf("Sending version: %d\n", version);
 #endif
-    send(openrgb_socket, &version, 4, 0);
+    send(openrgb_socket, &version, 4, MSG_NOSIGNAL);
     pthread_mutex_unlock(&openrgb_send_mutex);
 }
 
@@ -192,8 +192,8 @@ void openrgb_set_client_name() {
     uint8_t header[16];
     openrgb_init_header(header, 0, OPENRGB_NET_PACKET_ID_SET_CLIENT_NAME, strlen("piled vx"));
     pthread_mutex_lock(&openrgb_send_mutex);
-    send(openrgb_socket, header, 16, 0);
-    send(openrgb_socket, name, strlen("piled vx"), 0);
+    send(openrgb_socket, header, 16, MSG_NOSIGNAL);
+    send(openrgb_socket, name, strlen("piled vx"), MSG_NOSIGNAL);
     pthread_mutex_unlock(&openrgb_send_mutex);
     free(name);
 }
@@ -203,7 +203,7 @@ void openrgb_request_controller_count() {
     uint8_t header[16];
     openrgb_init_header(header, 0, OPENRGB_NET_PACKET_ID_REQUEST_CONTROLLER_COUNT, 0);
     pthread_mutex_lock(&openrgb_send_mutex);
-    send(openrgb_socket, header, 16, 0);
+    send(openrgb_socket, header, 16, MSG_NOSIGNAL);
     pthread_mutex_unlock(&openrgb_send_mutex);
 }
 
@@ -212,8 +212,8 @@ void openrgb_request_controller_data(uint32_t pkt_dev_idx) {
     uint8_t header[16];
     openrgb_init_header(header, pkt_dev_idx, OPENRGB_NET_PACKET_ID_REQUEST_CONTROLLER_DATA, 4);
     pthread_mutex_lock(&openrgb_send_mutex);
-    send(openrgb_socket, header, 16, 0);
-    send(openrgb_socket, &openrgb_using_version, 4, 0);
+    send(openrgb_socket, header, 16, MSG_NOSIGNAL);
+    send(openrgb_socket, &openrgb_using_version, 4, MSG_NOSIGNAL);
     pthread_mutex_unlock(&openrgb_send_mutex);
 }
 
@@ -250,8 +250,8 @@ void openrgb_request_update_leds(uint32_t pkt_dev_idx, struct Color color) {
     printf("\n");
 #endif
     pthread_mutex_lock(&openrgb_send_mutex);
-    send(openrgb_socket, header, 16, 0);
-    send(openrgb_socket, packet, packet_size, 0);
+    send(openrgb_socket, header, 16, MSG_NOSIGNAL);
+    send(openrgb_socket, packet, packet_size, MSG_NOSIGNAL);
     pthread_mutex_unlock(&openrgb_send_mutex);
 }
 
@@ -336,17 +336,21 @@ void *openrgb_recv_thread(void *arg) {
             logger_debug("Received %d bytes. Starting parsing controller data...\n", bytes_received);
             struct openrgb_controller_data result;
             uint32_t offset = 0;
+            result.data_size = 0;
             memcpy(&result.data_size, response, 4);
             offset += 4;
+            result.type = 0;
             logger_debug("Data size: %d\n", result.data_size);
             memcpy(&result.type, response + offset, 4);
             offset += 4;
+            result.name_len = 1; // initializing as 1 bc it will store '\0' anyway
             logger_debug("Type: %d\n", result.type);
             memcpy(&result.name_len, response + offset, 2);
             offset += 2;
             logger_debug("Name length: %d\n", result.name_len);
             result.name = malloc(result.name_len);
             strcpy((char *)result.name, (char *)response + offset);
+            result.name[result.name_len - 1] = 0;
             offset += result.name_len;
             logger_debug("Parsed name by bytes:\n");
             for (int i = 0; i < result.name_len; i++) {
@@ -355,44 +359,55 @@ void *openrgb_recv_thread(void *arg) {
             logger_debug("\nName: %s\n", result.name);
 
             if (openrgb_using_version > 1) {
+                result.version_len = 1;
                 memcpy(&result.vendor_len, response + offset, 2);
                 offset += 2;
                 result.vendor = malloc(result.vendor_len);
                 strcpy((char *)result.vendor, (char *)response + offset);
+                result.vendor[result.vendor_len - 1] = 0;
                 offset += result.vendor_len;
                 logger_debug("Vendor: %s, length: %d\n", result.vendor, result.vendor_len);
             }
-
+            result.description_len = 1;
             memcpy(&result.description_len, response + offset, 2);
             offset += 2;
             result.description = malloc(result.description_len);
             strcpy((char *)result.description, (char *)response + offset);
+            result.description[result.description_len - 1] = 0;
             offset += result.description_len;
             logger_debug("Description: %s, length: %d\n", result.description, result.description_len);
 
+            result.version_len = 1;
             memcpy(&result.version_len, response + offset, 2);
             offset += 2;
             result.version = malloc(result.version_len);
             strcpy((char *)result.version, (char *)response + offset);
+            result.version[result.version_len - 1] = 0;
             offset += result.version_len;
             logger_debug("Version: %s, length: %d\n", result.version, result.version_len);
 
+            result.serial_len = 1;
             memcpy(&result.serial_len, response + offset, 2);
             offset += 2;
             result.serial = malloc(result.serial_len);
             strcpy((char *)result.serial, (char *)response + offset);
+            result.serial[result.serial_len - 1] = 0;
             offset += result.serial_len;
             logger_debug("Serial: %s, length: %d\n", result.serial, result.serial_len);
 
+            result.location_len = 1;
             memcpy(&result.location_len, response + offset, 2);
             offset += 2;
             result.location = malloc(result.location_len);
             strcpy((char *)result.location, (char *)response + offset);
+            result.location[result.location_len - 1] = 0;
             offset += result.location_len;
             logger_debug("Location size: %d, Location: %s\n", result.location_len, result.location);
 
+            result.num_modes = 0;
             memcpy(&result.num_modes, response + offset, 2);
             offset += 2;
+            result.active_mode = 0;
             memcpy(&result.active_mode, response + offset, 4);
             offset += 4;
             logger_debug("Modes count: %d, active mode: %d\n", result.num_modes, result.active_mode);
@@ -401,41 +416,56 @@ void *openrgb_recv_thread(void *arg) {
             struct openrgb_mode_data *mode_data = malloc(sizeof(struct openrgb_mode_data) * result.num_modes);
             for (int mode = 0; mode < result.num_modes; mode++) {
                 logger_debug("Parsing mode #%d of %d\n", mode + 1, result.num_modes);
+                mode_data[mode].mode_name_len = 1;
                 memcpy(&mode_data[mode].mode_name_len, response + offset, 2);
                 offset += 2;
                 mode_data[mode].mode_name = malloc(mode_data[mode].mode_name_len);
                 memcpy(mode_data[mode].mode_name, response + offset, mode_data[mode].mode_name_len);
+                mode_data[mode].mode_name[mode_data[mode].mode_name_len - 1] = 0;
                 offset += mode_data[mode].mode_name_len;
                 logger_debug("Mode name: %s\n", mode_data[mode].mode_name);
 
+                mode_data[mode].mode_value = 0;
                 memcpy(&mode_data[mode].mode_value, response + offset, 4);
                 offset += 4;
+                mode_data[mode].mode_flags = 0;
                 memcpy(&mode_data[mode].mode_flags, response + offset, 4);
                 offset += 4;
+                mode_data[mode].mode_speed_min = 0;
                 memcpy(&mode_data[mode].mode_speed_min, response + offset, 4);
                 offset += 4;
+                mode_data[mode].mode_speed_max = 0;
                 memcpy(&mode_data[mode].mode_speed_max, response + offset, 4);
                 offset += 4;
                 if (openrgb_using_version >= 3) {
+                    mode_data[mode].mode_brightness_min = 0;
                     memcpy(&mode_data[mode].mode_brightness_min, response + offset, 4);
                     offset += 4;
+                    mode_data[mode].mode_brightness_max = 1;
                     memcpy(&mode_data[mode].mode_brightness_max, response + offset, 4);
                     offset += 4;
                 }
+                mode_data[mode].mode_colors_min = 0;
                 memcpy(&mode_data[mode].mode_colors_min, response + offset, 4);
                 offset += 4;
+                mode_data[mode].mode_colors_max = 0;
                 memcpy(&mode_data[mode].mode_colors_max, response + offset, 4);
                 offset += 4;
+                mode_data[mode].mode_speed = 0;
                 memcpy(&mode_data[mode].mode_speed, response + offset, 4);
                 offset += 4;
                 if (openrgb_using_version >= 3) {
+                    mode_data[mode].mode_brightness = 0;
                     memcpy(&mode_data[mode].mode_brightness, response + offset, 4);
                     offset += 4;
                 }
+                mode_data[mode].mode_direction = 0;
                 memcpy(&mode_data[mode].mode_direction, response + offset, 4);
                 offset += 4;
+                mode_data[mode].mode_color_mode = 0;
                 memcpy(&mode_data[mode].mode_color_mode, response + offset, 4);
                 offset += 4;
+                mode_data[mode].mode_num_colors = 0;
                 memcpy(&mode_data[mode].mode_num_colors, response + offset, 2);
                 offset += 2;
                 logger_debug("Number of colors: %d\n", mode_data[mode].mode_num_colors);
@@ -445,30 +475,38 @@ void *openrgb_recv_thread(void *arg) {
             }
             result.modes = mode_data;
             // parsing zones..........
+            result.num_zones = 0;
             memcpy(&result.num_zones, response + offset, 2);
             offset += 2;
             logger_debug("Zones number: %d", result.num_zones);
             struct openrgb_zone_data *zone_data = malloc(sizeof(struct openrgb_zone_data) * result.num_zones);
             for (int zone = 0; zone < result.num_zones; zone++) {
                 logger_debug("Parsing zone #%d of %d\n", zone + 1, result.num_zones);
+                zone_data[zone].zone_name_len = 1;
                 memcpy(&zone_data[zone].zone_name_len, response + offset, 2);
                 offset += 2;
                 zone_data[zone].zone_name = malloc(zone_data[zone].zone_name_len);
                 memcpy(zone_data[zone].zone_name, response + offset, zone_data[zone].zone_name_len);
+                zone_data[zone].zone_name[zone_data[zone].zone_name_len - 1] = 0;
                 offset += zone_data[zone].zone_name_len;
                 logger_debug("Zone name: %s\n", zone_data[zone].zone_name);
 
+                zone_data[zone].zone_type = 0;
                 memcpy(&zone_data[zone].zone_type, response + offset, 4);
                 offset += 4;
 
+                zone_data[zone].zone_leds_min = 0;
                 memcpy(&zone_data[zone].zone_leds_min, response + offset, 4);
                 offset += 4;
+                zone_data[zone].zone_leds_max = 0;
                 memcpy(&zone_data[zone].zone_leds_max, response + offset, 4);
                 offset += 4;
 
+                zone_data[zone].zone_leds_count = 0;
                 memcpy(&zone_data[zone].zone_leds_count, response + offset, 4);
                 offset += 4;
 
+                zone_data[zone].zone_matrix_len = 0;
                 memcpy(&zone_data[zone].zone_matrix_len, response + offset, 2);
                 offset += 2;
 
@@ -482,24 +520,30 @@ void *openrgb_recv_thread(void *arg) {
 
                     // there could be zone_matrix_data...
                     offset += zone_data[zone].zone_matrix_len - 8;
+                    zone_data[zone].zone_matrix_data = NULL;
                 }
+                zone_data[zone].zone_matrix_data = NULL;
                 offset += 2; // why?
             }
             result.zones = zone_data;
 
             // parsing leds
+            result.num_leds = 0;
             memcpy(&result.num_leds, response + offset, 2);
             offset += 2;
             struct openrgb_led_data *led_data = malloc(sizeof(struct openrgb_led_data) * result.num_leds);
             for (int led = 0; led < result.num_leds; led++) {
                 logger_debug("Parsing led #%d of %d\n", led, result.num_leds);
+                led_data[led].led_name_len = 1;
                 memcpy(&led_data[led].led_name_len, response + offset, 2);
                 offset += 2;
                 logger_debug("Led name len: %d", led_data[led].led_name_len);
                 led_data[led].led_name = malloc(led_data[led].led_name_len);
                 memcpy(led_data[led].led_name, response + offset, led_data[led].led_name_len);
+                led_data[led].led_name[led_data[led].led_name_len - 1] = 0;
                 offset += led_data[led].led_name_len;
                 logger_debug("Led name: %s", led_data[led].led_name);
+                led_data[led].led_value = 0;
                 memcpy(&led_data[led].led_value, response + offset, 4);
                 offset += 4;
                 logger_debug("Led value: %d", led_data[led].led_value);
@@ -580,8 +624,16 @@ void openrgb_shutdown() {
     }
 
     if (openrgb_socket >= 0) {
+        pthread_mutex_lock(&openrgb_send_mutex);
         close(openrgb_socket);
+        pthread_mutex_unlock(&openrgb_send_mutex);
         openrgb_socket = -1;
+    }
+
+    if (openrgb_exit == 1) {
+        openrgb_needs_reinit = 0;
+        if (openrgb_reconnect_thread_id)
+            pthread_join(openrgb_reconnect_thread_id, NULL);
     }
 
     logger_debug("Releasing memory, allocated for OpenRGB");

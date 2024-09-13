@@ -16,6 +16,7 @@ void handle_sigint(int sig) {
     logger("Stopping server!");
     stop_server = 1;
     openrgb_stop_server = 1;
+    openrgb_exit = 1;
 }
 
 char config_file[256];

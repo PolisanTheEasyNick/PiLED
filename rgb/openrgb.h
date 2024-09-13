@@ -33,7 +33,7 @@ extern int8_t openrgb_using_version;
 extern int32_t openrgb_devices_num;
 extern struct openrgb_controller_data *openrgb_controllers;
 extern int8_t openrgb_parsed_all_devices;
-extern volatile sig_atomic_t openrgb_stop_server;
+extern volatile sig_atomic_t openrgb_stop_server, openrgb_exit;
 
 struct openrgb_controller_data {
     // NET_PACKET_ID_REQUEST_CONTROLLER_DATA response type for version 3 of OpenRGB SDK

@@ -201,7 +201,7 @@ uint8_t parse_config(const char *config_file) {
         fprintf(stderr, "Missing PI_ADDR in config file, using default (NULL)\n");
         PI_ADDR = NULL;
     } else {
-        PI_ADDR = malloc(strlen(addr));
+        PI_ADDR = malloc(strlen(addr) + 1);
         strncpy(PI_ADDR, addr, strlen(addr));
         PI_ADDR[strlen(addr)] = 0;
     }
@@ -211,7 +211,7 @@ uint8_t parse_config(const char *config_file) {
         fprintf(stderr, "Missing PI_PORT in config file, using default (8888)\n");
         PI_PORT = NULL;
     } else {
-        PI_PORT = malloc(strlen(port));
+        PI_PORT = malloc(strlen(port) + 1);
         strncpy(PI_PORT, port, strlen(port));
         PI_PORT[strlen(port)] = 0;
     }
@@ -249,7 +249,7 @@ uint8_t parse_config(const char *config_file) {
         strncpy(OPENRGB_SERVER, "127.0.0.1", strlen("127.0.0.1"));
         OPENRGB_SERVER[strlen("127.0.0.1")] = 0;
     } else {
-        OPENRGB_SERVER = malloc(strlen(openrgb_addr));
+        OPENRGB_SERVER = malloc(strlen(openrgb_addr) + 1);
         strncpy(OPENRGB_SERVER, openrgb_addr, strlen(openrgb_addr));
         OPENRGB_SERVER[strlen(openrgb_addr)] = 0;
     }
