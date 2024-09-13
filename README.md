@@ -1,8 +1,18 @@
 # PiLED
-
 This project used for installing on Raspberry Pi.  
 LED Strip is connected to Raspberry Pi GPIO pins.  
 This program opens TCP server on port 3384 and waits for plain TCP packets, created as described below.  
+![scheme](https://github.com/user-attachments/assets/a79d5edb-c83d-410e-84cb-00733224dead)
+
+> [!WARNING]  
+> Before assembling or using this electronic schematic, **ensure that all voltages and power requirements are correctly calculated** and appropriate for your components and setup.  
+> Incorrect voltage or power supply can result in permanent damage to the components or pose safety risks.
+
+> [!CAUTION]
+> I provide this schematic as-is without any warranties or guarantees.
+> By using this design, you agree that I am not liable for any damages, injuries, or losses that may occur as a result of following these instructions.  
+> **Use at your own risk.**  
+
 
 ## Features:
 * Basic color change
