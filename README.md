@@ -3,7 +3,8 @@
 This project used for installing on Raspberry Pi.  
 LED Strip is connected to Raspberry Pi GPIO pins.  
 This program opens TCP server on port 3384 and waits for plain TCP packets, created as described below.  
-![scheme](https://github.com/user-attachments/assets/a79d5edb-c83d-410e-84cb-00733224dead)
+![scheme](https://github.com/user-attachments/assets/8dfd6e76-bd6d-4d10-821b-5ac0036d3364)
+
 
 > [!WARNING]  
 > Before assembling or using this electronic schematic, **ensure that all voltages and power requirements are correctly calculated** and appropriate for your components and setup.  
