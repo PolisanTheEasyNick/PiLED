@@ -14,6 +14,10 @@
 #include "server/ws.h"
 #endif
 
+#ifdef microhttpd_FOUND
+#include "server/http.h"
+#endif
+
 void handle_sigint(int sig) {
     logger("Stopping server!");
     stop_server = 1;
@@ -52,6 +56,10 @@ int main(int argc, char *argv[]) {
 
 #ifdef libwebsockets_FOUND
     ws_server_init(pi);
+#endif
+
+#ifdef microhttpd_FOUND
+    start_http_server(pi);
 #endif
 
     if (start_server(pi, 3384) < 0) {

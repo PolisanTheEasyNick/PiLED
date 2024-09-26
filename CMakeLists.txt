@@ -12,10 +12,16 @@ find_package(Threads REQUIRED)
 find_package(pigpio QUIET)
 
 find_package(libwebsockets QUIET)
-if(libwebsockets_FOUND)
-  message(STATUS "libwebsockets found. Building with WebSocket support.")
-else()
+if(NOT libwebsockets_FOUND)
   message(WARNING "libwebsockets not found in system! Building without WebSocket support.")
+endif()
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(MICROHTTPD REQUIRED libmicrohttpd)
+if(MICROHTTPD_FOUND)
+  include_directories(${MICROHTTPD_INCLUDE_DIRS})
+else()
+  message(WARNING "microhttpd not found in system! Building without HTTP server support.")
 endif()
 
 if(NOT pigpio_FOUND)
@@ -25,12 +31,14 @@ if(NOT pigpio_FOUND)
   set(pigpiod_if2_LIBRARY "${CMAKE_BINARY_DIR}/pigpio/libpigpiod_if2.so")
 endif()
 
+
+
 include_directories(${pigpio_INCLUDE_DIRS})
 
 add_executable(piled
   main.c
   server/server.h server/server.c
-  server/ws.h server/ws.c
+  server/ws.h server/ws.c server/http.h
   utils/utils.h utils/utils.c
   parser/parser.h parser/parser.c
   parser/config.h parser/config.c
@@ -46,8 +54,13 @@ if(libwebsockets_FOUND)
   target_link_libraries(piled websockets)
 endif()
 
+if(MICROHTTPD_FOUND)
+  add_definitions(-Dmicrohttpd_FOUND)
+  target_link_libraries(piled microhttpd)
+endif()
+
 if(NOT pigpio_FOUND)
-  add_dependencies(piled pigpiod_if2) #is there cleaner way to make submodule build??? 
+  add_dependencies(piled pigpiod_if2)
 endif()
 
 add_executable(openrgb_configurator
