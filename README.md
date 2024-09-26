@@ -3,7 +3,8 @@
 This project used for installing on Raspberry Pi.  
 LED Strip is connected to Raspberry Pi GPIO pins.  
 This program opens TCP server on port 3384 and waits for plain TCP packets, created as described below.  
-Also PiLED opens 3385 port as WebSocket server and waits for "RED, GREEN, BLUE, DURATION" data.   
+Also, if builded with `libwebsockets` library, PiLED opens 3385 port as WebSocket server and waits for "RED,GREEN,BLUE,DURATION" data.  
+
 ![scheme](https://github.com/user-attachments/assets/8dfd6e76-bd6d-4d10-821b-5ac0036d3364)
 
 
@@ -116,7 +117,7 @@ Start PULSE animation. In `PAYLOAD` must be provided color fields and `Duration`
 * RPi with running `pigpiod`
 * `libssl-dev`
 * `libconfig`
-* `libwebsockets-dev` (optional, for WS server support for trusted networks)
+* `libwebsockets` (optional, for WS server support for trusted networks)
   
 ## Building and Running
 * `git clone --recursive https://github.com/PolisanTheEasyNick/PiLED`
@@ -130,6 +131,18 @@ Start PULSE animation. In `PAYLOAD` must be provided color fields and `Duration`
 You can also install piled to your system using:  
 `sudo make install`  
 which will copy executable to `${CMAKE_INSTALL_BINDIR}`, which often refers to `/usr/local/bin/piled` along with config file copy at `/etc/piled/piled.conf` and systemd service file at `/etc/systemd/system/piled.service`.  
+
+## WebSockets  
+For WebSockets support you need to install `libwebsockets` library.  
+Unfortunately, on Raspbian it needs manual building:  
+* `git clone https://libwebsockets.org/repo/libwebsockets`
+* `cd libwebsockets`
+* `mkdir build`
+* `cd build`
+* `cmake ..`
+* `make`
+* `sudo make install`
+After this steps you can remake piled and it will be builed with WebSockets support.  
 
 ## Configuring
 You can configure PiLED by editing config file /etc/piled/piled.conf or by copying him into ~/.config/piled.conf and editing at home dir.  
