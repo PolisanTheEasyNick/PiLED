@@ -3,7 +3,9 @@
 This project used for installing on Raspberry Pi.  
 LED Strip is connected to Raspberry Pi GPIO pins.  
 This program opens TCP server on port 3384 and waits for plain TCP packets, created as described below.  
-Also, if builded with `libwebsockets` library, PiLED opens 3385 port as WebSocket server and waits for "RED,GREEN,BLUE,DURATION" data.  
+If builded with `libwebsockets` library and with DWITH_WS=ON flag, PiLED opens 3385 port as WebSocket server and waits for "RED,GREEN,BLUE,DURATION" data.  
+If builded with `microhttpd` library and with DWITH_HTML=ON flag, PiLED opens 3386 port as HTML server and waits for `?R={red}&G={green}&B={blue}&DURATION={dur}` GET request.  
+Note that HTML and WS servers skips all security checks, so make sure to not expose these ports to WAN and create additional layer of security by network side if used.  
 
 ![scheme](https://github.com/user-attachments/assets/8dfd6e76-bd6d-4d10-821b-5ac0036d3364)
 
@@ -117,14 +119,15 @@ Start PULSE animation. In `PAYLOAD` must be provided color fields and `Duration`
 * RPi with running `pigpiod`
 * `libssl-dev`
 * `libconfig`
-* `libwebsockets` (optional, for WS server support for trusted networks)
+* `libwebsockets` (optional, for WS server support for trusted networks)  
+* `libmicrohttpd-dev` (optional, for HTML server support for trusted networks).
   
 ## Building and Running
 * `git clone --recursive https://github.com/PolisanTheEasyNick/PiLED`
 * `cd PiLED`
 * `mkdir build`
 * `cd build`
-* `cmake ..`
+* `cmake -DWITH_HTML=ON -DWITH_WS=ON ..` (flags are optional.)
 * `make`
 * `./piled`  
 
@@ -142,7 +145,10 @@ Unfortunately, on Raspbian it needs manual building:
 * `cmake ..`
 * `make`
 * `sudo make install`
-After this steps you can remake piled and it will be builed with WebSockets support.  
+After this steps you can remake piled with `-DWITH_WS=ON` flag and it will be builed with WebSockets support.  
+
+## HTML
+For HTML server support, you need to install `libmicrohttpd-dev` package and rebuild with `-DWITH_HTML=ON` CMake flag.  
 
 ## Configuring
 You can configure PiLED by editing config file /etc/piled/piled.conf or by copying him into ~/.config/piled.conf and editing at home dir.  
