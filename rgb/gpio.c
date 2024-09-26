@@ -4,6 +4,7 @@
 #include "../utils/utils.h"
 #include "openrgb.h"
 #include "pigpiod_if2.h"
+#include <pthread.h>
 #include <stdint.h>
 #include <unistd.h>
 
@@ -22,6 +23,7 @@ void set_color(int pi, struct Color color) {
 
 void set_color_duration(int pi, struct Color color, uint8_t duration) {
     is_animating = 0; // stop animation if any
+    pthread_detach(animation_thread);
     set_color_duration_anim(pi, color, duration);
 }
 
@@ -31,6 +33,7 @@ void set_color_duration_anim(int pi, struct Color color, uint8_t duration) {
     if (duration == 0) {
         set_color(pi, color);
     } else {
+        is_animating = 1;
         struct Color last_color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
                                    get_PWM_dutycycle(pi, BLUE_PIN)};
         logger("set_color_duration: Got last color %d %d %d", last_color.RED, last_color.GREEN, last_color.BLUE);
@@ -43,6 +46,8 @@ void set_color_duration_anim(int pi, struct Color color, uint8_t duration) {
         uint32_t step_duration_us = (duration * 1000000) / TRANSITION_STEPS;
 
         for (uint8_t step = 0; step < TRANSITION_STEPS; step++) {
+            if (!is_animating)
+                return;
             logger("set_color_duration: step #%d", step);
             short red = last_color.RED + (red_step_size * step) / TRANSITION_STEPS;
             short green = last_color.GREEN + (green_step_size * step) / TRANSITION_STEPS;
