@@ -10,6 +10,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef libwebsockets_FOUND
+#include "server/ws.h"
+#endif
+
 void handle_sigint(int sig) {
     logger("Stopping server!");
     stop_server = 1;
@@ -45,6 +49,10 @@ int main(int argc, char *argv[]) {
     set_mode(pi, BLUE_PIN, PI_OUTPUT);
 
     set_color(pi, (struct Color){0, 0, 0});
+
+#ifdef libwebsockets_FOUND
+    ws_server_init(pi);
+#endif
 
     if (start_server(pi, 3384) < 0) {
         fprintf(stderr, "Failed to start server\n");

@@ -3,6 +3,7 @@
 This project used for installing on Raspberry Pi.  
 LED Strip is connected to Raspberry Pi GPIO pins.  
 This program opens TCP server on port 3384 and waits for plain TCP packets, created as described below.  
+Also PiLED opens 3385 port as WebSocket server and waits for "RED, GREEN, BLUE, DURATION" data.   
 ![scheme](https://github.com/user-attachments/assets/8dfd6e76-bd6d-4d10-821b-5ac0036d3364)
 
 
@@ -21,6 +22,7 @@ This program opens TCP server on port 3384 and waits for plain TCP packets, crea
 * Smooth color change from current color to desired with given timing
 * Fade and Pulse animations
 * OpenRGB SDK support (refer to [OpenRGB](#openrgb) section)
+* WebSocket support for simpler controlling.
 
 LED PROTOCOL v4
 Simply contains `HEADER` + `HMAC-SHA-256` + `PAYLOAD`  
@@ -114,6 +116,7 @@ Start PULSE animation. In `PAYLOAD` must be provided color fields and `Duration`
 * RPi with running `pigpiod`
 * `libssl-dev`
 * `libconfig`
+* `libwebsockets-dev` (optional, for WS server support for trusted networks)
   
 ## Building and Running
 * `git clone --recursive https://github.com/PolisanTheEasyNick/PiLED`

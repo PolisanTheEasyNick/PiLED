@@ -11,6 +11,13 @@ find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(pigpio QUIET)
 
+find_package(libwebsockets QUIET)
+if(libwebsockets_FOUND)
+  message(STATUS "libwebsockets found. Building with WebSocket support.")
+else()
+  message(WARNING "libwebsockets not found in system! Building without WebSocket support.")
+endif()
+
 if(NOT pigpio_FOUND)
   message(WARNING "pigpio not found in system! Will be builded from submodule.")
   add_subdirectory("${CMAKE_SOURCE_DIR}/pigpio")
@@ -23,6 +30,7 @@ include_directories(${pigpio_INCLUDE_DIRS})
 add_executable(piled
   main.c
   server/server.h server/server.c
+  server/ws.h server/ws.c
   utils/utils.h utils/utils.c
   parser/parser.h parser/parser.c
   parser/config.h parser/config.c
@@ -32,6 +40,12 @@ add_executable(piled
 )
 
 target_link_libraries(piled OpenSSL::SSL config ${CMAKE_THREAD_LIBS_INIT} ${pigpiod_if2_LIBRARY})
+
+if(libwebsockets_FOUND)
+  add_definitions(-Dlibwebsockets_FOUND)
+  target_link_libraries(piled websockets)
+endif()
+
 if(NOT pigpio_FOUND)
   add_dependencies(piled pigpiod_if2) #is there cleaner way to make submodule build??? 
 endif()
