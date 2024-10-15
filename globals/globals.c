@@ -9,3 +9,4 @@ int BLUE_PIN = -1;
 char *OPENRGB_SERVER = 0;
 int OPENRGB_PORT = 0;
 char config_file[256];
+uint8_t pi = 0;

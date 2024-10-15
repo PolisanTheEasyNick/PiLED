@@ -4,8 +4,6 @@
 
 #include <libwebsockets.h>
 
-extern volatile uint8_t pi;
-
 int callback_websocket(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
 
 static struct lws_protocols protocols[] = {

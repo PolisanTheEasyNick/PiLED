@@ -1,14 +1,17 @@
 #ifdef libwebsockets_FOUND
-
 #include "ws.h"
+#include "../globals/globals.h"
 #include "../rgb/gpio.h"
 #include "../utils/utils.h"
 #include "server.h"
 #include <pthread.h>
 
-volatile uint8_t pi;
-
 int callback_websocket(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
+
+    if (is_suspended) {
+        return 0;
+    }
+
     switch (reason) {
     case LWS_CALLBACK_RECEIVE: {
         // expecting the input in the format: "RED,GREEN,BLUE,DURATION"

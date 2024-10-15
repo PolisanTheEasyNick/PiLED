@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
         logger("Not starting OpenRGB since OpenRGB server IP not set.");
     }
 
-    int pi = pigpio_start(PI_ADDR, PI_PORT);
+    pi = pigpio_start(PI_ADDR, PI_PORT);
     if (pi < 0) {
         fprintf(stderr, "Pigpio initialization failed.\n");
         return 1;

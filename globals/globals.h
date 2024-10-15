@@ -21,6 +21,8 @@ extern char config_file[256];
 extern struct openrgb_device *openrgb_devices_to_change; // defined in openrgb.c
 extern int32_t openrgb_using_devices_num;                // defined in openrgb.c
 
+extern uint8_t pi; // should be inited by main
+
 #define PILED_VERSION 4
 #define BUFFER_SIZE 55    // ver 4
 #define HEADER_SIZE 18    // ver 4

@@ -1,4 +1,5 @@
 #ifdef microhttpd_FOUND
+#include "../globals/globals.h"
 #include "../rgb/gpio.h"
 #include "../utils/utils.h"
 #include "server.h"
@@ -10,13 +11,23 @@
 
 #define PORT 3386
 
-uint8_t pi;
-
 static enum MHD_Result answer_to_connection(void *cls, struct MHD_Connection *connection, const char *url,
                                             const char *method, const char *version, const char *upload_data,
                                             size_t *upload_data_size, void **con_cls) {
     if (strcmp(method, "GET") != 0) {
         return MHD_NO;
+    }
+
+    if (is_suspended) {
+        logger("HTTP: Received request but PiLED is suspended! Ignoring.");
+        struct MHD_Response *response = MHD_create_response_from_buffer(
+            strlen("403: PiLED is in Suspend Mode!"), (void *)"403: PiLED is in Suspend Mode!", MHD_RESPMEM_PERSISTENT);
+        if (!response) {
+            return MHD_NO;
+        }
+        int ret = MHD_queue_response(connection, MHD_HTTP_FORBIDDEN, response);
+        MHD_destroy_response(response);
+        return ret;
     }
 
     const char *RED_str = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "R");
@@ -28,10 +39,10 @@ static enum MHD_Result answer_to_connection(void *cls, struct MHD_Connection *co
         return MHD_NO;
     }
 
-    int red = atoi(RED_str);
-    int green = atoi(GREEN_str);
-    int blue = atoi(BLUE_str);
-    int duration = atoi(DURATION_str);
+    uint8_t red = atoi(RED_str);
+    uint8_t green = atoi(GREEN_str);
+    uint8_t blue = atoi(BLUE_str);
+    uint8_t duration = atoi(DURATION_str);
 
     logger("HTTP: Received colors: R=%d, G=%d, B=%d, Duration=%d s\n", red, green, blue, duration);
     set_color_duration(pi, (struct Color){red, green, blue}, duration);
