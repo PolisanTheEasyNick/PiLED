@@ -23,7 +23,8 @@ void set_color(int pi, struct Color color) {
 
 void set_color_duration(int pi, struct Color color, uint8_t duration) {
     is_animating = 0; // stop animation if any
-    pthread_detach(animation_thread);
+    if (animation_thread)
+        pthread_detach(animation_thread);
     set_color_duration_anim(pi, color, duration);
 }
 

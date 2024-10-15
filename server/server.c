@@ -13,7 +13,20 @@
 #include <time.h>
 #include <unistd.h>
 
-volatile sig_atomic_t stop_server = 0;
+volatile sig_atomic_t stop_server = 0, is_suspended = 0;
+
+void stop_animation() {
+    pthread_mutex_lock(&animation_mutex);
+    if (is_animating) {
+        is_animating = 0;
+        if (animation_thread)
+            pthread_join(animation_thread, NULL);
+
+        pthread_mutex_unlock(&animation_mutex);
+    } else {
+        pthread_mutex_unlock(&animation_mutex);
+    }
+}
 
 int start_server(int pi, int port) {
     int server_fd, client_fd;
@@ -77,6 +90,10 @@ int start_server(int pi, int port) {
             } else {
                 logger("Received: %d bytes.\n", bytes_received);
                 struct parse_result result = parse_message(buffer);
+                if (is_suspended && result.OP != SYS_TOGGLE_SUSPEND) {
+                    logger("Received package, but PiLED is in *suspended* mode! Ignoring.");
+                    continue;
+                }
                 logger("Result of parsing: %d", result.result);
                 if (result.result == 0) {
                     logger("Successfully parsed and checked packet, processing. v%d", result.version);
@@ -113,15 +130,7 @@ int start_server(int pi, int port) {
                             break;
                         }
                         case ANIM_SET_FADE: {
-                            pthread_mutex_lock(&animation_mutex);
-                            if (is_animating) {
-                                is_animating = 0;
-                                pthread_join(animation_thread, NULL);
-
-                                pthread_mutex_unlock(&animation_mutex);
-                            } else {
-                                pthread_mutex_unlock(&animation_mutex);
-                            }
+                            stop_animation();
 
                             struct fade_animation_args *args = malloc(sizeof(struct fade_animation_args));
                             args->pi = pi;
@@ -136,14 +145,7 @@ int start_server(int pi, int port) {
                             break;
                         }
                         case ANIM_SET_PULSE: {
-                            pthread_mutex_lock(&animation_mutex);
-                            if (is_animating) {
-                                is_animating = 0;
-                                pthread_join(animation_thread, NULL);
-                                pthread_mutex_unlock(&animation_mutex);
-                            } else {
-                                pthread_mutex_unlock(&animation_mutex);
-                            }
+                            stop_animation();
 
                             struct pulse_animation_args *args = malloc(sizeof(struct pulse_animation_args));
                             args->pi = pi;
@@ -157,6 +159,17 @@ int start_server(int pi, int port) {
                                 logger("Started pulse animation thread!");
                             }
                             break;
+                        }
+                        case SYS_TOGGLE_SUSPEND: {
+                            stop_animation();
+                            if (is_suspended) {
+                                is_suspended = 0;
+                                set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE},
+                                                   result.duration);
+                            } else {
+                                is_suspended = 1;
+                                set_color_duration(pi, (struct Color){0, 0, 0}, result.duration);
+                            }
                         }
                         }
                         break;

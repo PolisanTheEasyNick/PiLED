@@ -156,23 +156,30 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
     };
     case LED_GET_CURRENT_COLOR: { // GET COLOR
         // TODO: HMAC check?? No point since get color request not sensible?
-        logger("parse_message: OP code is 1, getting color");
+        logger("parse_message: OP code is LED_GET_CURRENT_COLOR, getting color");
         result.result = 0;
         result.OP = LED_GET_CURRENT_COLOR;
         result.version = 3; // minimal for this OP; change logic in future?
         break;
     }
     case ANIM_SET_FADE: {
-        logger("parse_message: OP code is 2, starting FADE animation");
+        logger("parse_message: OP code is ANIM_SET_FADE, starting FADE animation");
         result = parse_payload(buffer, version, PARSED_HMAC);
         result.OP = ANIM_SET_FADE;
         result.version = 4;
         break;
     }
     case ANIM_SET_PULSE: {
-        logger("parse_message: OP code is 3, setting PULSE animation");
+        logger("parse_message: OP code is ANIM_SET_PULSE, setting PULSE animation");
         result = parse_payload(buffer, version, PARSED_HMAC);
         result.OP = ANIM_SET_PULSE;
+        result.version = 4;
+        break;
+    }
+    case SYS_TOGGLE_SUSPEND: {
+        logger("parse_message: OP code is SYS_TOGGLE_SUSPEND.");
+        result = parse_payload(buffer, version, PARSED_HMAC);
+        result.OP = SYS_TOGGLE_SUSPEND;
         result.version = 4;
         break;
     }

@@ -27,9 +27,11 @@ extern int32_t openrgb_using_devices_num;                // defined in openrgb.c
 #define PAYLOAD_SIZE 5    // ver 4
 #define PAYLOAD_OFFSET 50 // ver 4, offset to start of PAYLOAD bytes in BUFFER
 
+// Operational Codes
 #define LED_SET_COLOR 0
 #define LED_GET_CURRENT_COLOR 1
 #define ANIM_SET_FADE 2
 #define ANIM_SET_PULSE 3
+#define SYS_TOGGLE_SUSPEND 4
 
 #endif // GLOBALS_H

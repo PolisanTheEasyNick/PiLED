@@ -61,6 +61,7 @@ Must be generated with SHA-256 algorithm with using `shared_secret` which writed
 | 1     | [LED_GET_CURRENT_COLOR](#led_get_current_color) | Request led-server current LEDs color |
 | 2     | [ANIM_SET_FADE](#anim_set_fade)                 | Start FADE animation                  |
 | 3     | [ANIM_SET_PULSE](#anim_set_pulse)               | Start PULSE animation                 |
+| 4     | [SYS_TOGGLE_SUSPEND](#sys_toggle_suspend)       | Toggle suspend mode                   |
 
 
 ## PAYLOAD Structure
@@ -93,6 +94,13 @@ Starts FADE animation. To `PAYLOAD` must be added `Speed` field as described at 
 Request size: 55 bytes (`HEADER` + `HMAC` + `PAYLOAD`)
 Response size: 0 bytes (no response)
 Start PULSE animation. In `PAYLOAD` must be provided color fields and `Duration`.
+
+## SYS_TOGGLE_SUSPEND
+Request size: 55 bytes (`HEADER` + `HMAC` + `PAYLOAD`)  
+Response size: 0 bytes (no response).  
+Toggles Suspend mode.  
+While suspended, it will turn off all lights and ignore all commands but `SYS_TOGGLE_SUSPEND`.
+On suspend off will set given color from payload.
 
 ## Client Side Workflow
 1. Generate Timestamp and Nonce  
