@@ -28,15 +28,125 @@ void stop_animation() {
     }
 }
 
-int start_server(int pi, int port) {
-    int server_fd, client_fd;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t client_addr_len = sizeof(client_addr);
+void *handle_client(void *client_sock) {
+    int client_fd = *(int *)client_sock;
+    free(client_sock);
+
     unsigned char buffer[BUFFER_SIZE];
     memset(buffer, 0, BUFFER_SIZE);
-    struct timeval timeout;
-    fd_set read_fds;
-    pthread_t thread_id;
+
+    while (1) {
+        int bytes_received = recv(client_fd, buffer, BUFFER_SIZE, 0);
+        if (bytes_received < 0) {
+            perror("recv");
+            break;
+        } else if (bytes_received == 0) {
+            logger("Client disconnected\n");
+            break;
+        }
+
+        logger("Received: %d bytes.", bytes_received);
+        struct parse_result result = parse_message(buffer);
+
+        if (is_suspended && result.OP != SYS_TOGGLE_SUSPEND) {
+            logger("Received package, but PiLED is in *suspended* mode! Ignoring.");
+            continue;
+        }
+
+        logger("Result of parsing: %d", result.result);
+        if (result.result == 0) {
+            logger("Successfully parsed and checked packet, processing. v%d", result.version);
+            switch (result.version) {
+            case 4:
+            case 3: {
+                logger("v3, OP is: %d", result.OP);
+                switch (result.OP) {
+                case LED_SET_COLOR: {
+                    set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
+                    break;
+                }
+                case LED_GET_CURRENT_COLOR: {
+                    unsigned char current_color[11];
+                    uint64_t current_time = time(NULL);
+                    struct Color last_color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
+                                               get_PWM_dutycycle(pi, BLUE_PIN)};
+                    logger("Current color is: 0x%x 0x%x 0x%x", last_color.RED, last_color.GREEN, last_color.BLUE);
+                    memset(current_color, 0, 11);
+                    memcpy(current_color, (unsigned char *)&current_time, 8);
+                    current_color[8] = last_color.RED;
+                    current_color[9] = last_color.GREEN;
+                    current_color[10] = last_color.BLUE;
+#ifdef DEBUG
+                    for (short i = 0; i < 11; i++) {
+                        printf("%x ", current_color[i]);
+                    }
+                    printf("\n");
+#endif
+                    send(client_fd, current_color, 11, 0);
+                    break;
+                }
+                case ANIM_SET_FADE: {
+                    stop_animation();
+                    struct fade_animation_args *args = malloc(sizeof(struct fade_animation_args));
+                    args->pi = pi;
+                    args->speed = result.speed;
+                    if (pthread_create(&animation_thread, NULL, start_fade_animation, (void *)args) != 0) {
+                        perror("Failed to create thread");
+                        free(args);
+                    } else {
+                        logger("Started fade animation thread!");
+                    }
+                    break;
+                }
+                case ANIM_SET_PULSE: {
+                    stop_animation();
+                    struct pulse_animation_args *args = malloc(sizeof(struct pulse_animation_args));
+                    args->pi = pi;
+                    args->color = (struct Color){result.RED, result.GREEN, result.BLUE};
+                    args->duration = result.duration;
+                    if (pthread_create(&animation_thread, NULL, start_pulse_animation, (void *)args) != 0) {
+                        perror("Failed to create thread");
+                        free(args);
+                    } else {
+                        logger("Started pulse animation thread!");
+                    }
+                    break;
+                }
+                case SYS_TOGGLE_SUSPEND: {
+                    stop_animation();
+                    is_suspended = !is_suspended;
+                    set_color_duration(pi,
+                                       (struct Color){is_suspended ? 0 : result.RED, is_suspended ? 0 : result.GREEN,
+                                                      is_suspended ? 0 : result.BLUE},
+                                       result.duration);
+                    break;
+                }
+                }
+                break;
+            }
+            case 2: {
+                logger("v2, setting with duration");
+                set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
+                break;
+            }
+            case 1:
+            default: {
+                logger("v1, setting without duration");
+                set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, 0);
+                break;
+            }
+            }
+        }
+    }
+
+    close(client_fd);
+    return NULL;
+}
+
+int start_server(int pi, int port) {
+    int server_fd;
+    struct sockaddr_in server_addr;
+    socklen_t client_addr_len = sizeof(struct sockaddr_in);
 
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
@@ -64,132 +174,27 @@ int start_server(int pi, int port) {
     logger("Server listening on port %d\n", port);
 
     while (!stop_server) {
-        FD_ZERO(&read_fds);
-        FD_SET(server_fd, &read_fds);
-
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
-
-        int activity = select(server_fd + 1, &read_fds, NULL, NULL, &timeout);
-
-        if (activity < 0 && !stop_server) {
-            perror("select");
-            break;
+        struct sockaddr_in client_addr;
+        int *client_fd = malloc(sizeof(int));
+        if (!client_fd) {
+            perror("malloc");
+            continue;
         }
 
-        if (activity > 0 && FD_ISSET(server_fd, &read_fds)) {
-            client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-            if (client_fd < 0) {
-                perror("accept");
-                continue;
-            }
+        *client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
+        if (*client_fd < 0) {
+            perror("accept");
+            free(client_fd);
+            continue;
+        }
 
-            int bytes_received = recv(client_fd, buffer, BUFFER_SIZE, 0);
-            if (bytes_received < 0) {
-                perror("recv");
-            } else {
-                logger("Received: %d bytes.\n", bytes_received);
-                struct parse_result result = parse_message(buffer);
-                if (is_suspended && result.OP != SYS_TOGGLE_SUSPEND) {
-                    logger("Received package, but PiLED is in *suspended* mode! Ignoring.");
-                    continue;
-                }
-                logger("Result of parsing: %d", result.result);
-                if (result.result == 0) {
-                    logger("Successfully parsed and checked packet, processing. v%d", result.version);
-                    switch (result.version) {
-                    case 4:
-                    case 3: {
-                        logger("v3, OP is: %d", result.OP);
-                        switch (result.OP) {
-                        case LED_SET_COLOR: { // SET COLOR
-                            set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE},
-                                               result.duration);
-                            break;
-                        }
-                        case LED_GET_CURRENT_COLOR: {        // GET COLOR
-                            unsigned char current_color[11]; // timestamp (8 bytes) + 3 bytes of colors RGB
-                            uint64_t current_time = time(NULL);
-                            struct Color last_color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
-                                                       get_PWM_dutycycle(pi, BLUE_PIN)};
-                            logger("Current color is: 0x%x 0x%x 0x%x", last_color.RED, last_color.GREEN,
-                                   last_color.BLUE);
-                            memset(current_color, 0, 11);
-                            memcpy(current_color, (unsigned char *)&current_time, 8);
-                            current_color[8] = last_color.RED;
-                            current_color[9] = last_color.GREEN;
-                            current_color[10] = last_color.BLUE;
-                            logger("Parsed color, sending this package:");
-#ifdef DEBUG
-                            for (short i = 0; i < 11; i++) {
-                                printf("%x ", current_color[i]);
-                            }
-                            printf("\n");
-#endif
-                            send(client_fd, current_color, 11, 0);
-                            break;
-                        }
-                        case ANIM_SET_FADE: {
-                            stop_animation();
-
-                            struct fade_animation_args *args = malloc(sizeof(struct fade_animation_args));
-                            args->pi = pi;
-                            args->speed = result.speed;
-
-                            if (pthread_create(&animation_thread, NULL, start_fade_animation, (void *)args) != 0) {
-                                perror("Failed to create thread");
-                                free(args);
-                            } else {
-                                logger("Started fade animation thread!");
-                            }
-                            break;
-                        }
-                        case ANIM_SET_PULSE: {
-                            stop_animation();
-
-                            struct pulse_animation_args *args = malloc(sizeof(struct pulse_animation_args));
-                            args->pi = pi;
-                            args->color = (struct Color){result.RED, result.GREEN, result.BLUE};
-                            args->duration = result.duration;
-
-                            if (pthread_create(&animation_thread, NULL, start_pulse_animation, (void *)args) != 0) {
-                                perror("Failed to create thread");
-                                free(args);
-                            } else {
-                                logger("Started pulse animation thread!");
-                            }
-                            break;
-                        }
-                        case SYS_TOGGLE_SUSPEND: {
-                            stop_animation();
-                            if (is_suspended) {
-                                is_suspended = 0;
-                                set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE},
-                                                   result.duration);
-                            } else {
-                                is_suspended = 1;
-                                set_color_duration(pi, (struct Color){0, 0, 0}, result.duration);
-                            }
-                        }
-                        }
-                        break;
-                    }
-                    case 2: {
-                        logger("v2, setting with duration");
-                        set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
-                        break;
-                    }
-                    case 1:
-                    default: {
-                        logger("v1, setting without duration");
-                        set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, 0);
-                        break;
-                    }
-                    }
-                }
-            }
-
-            close(client_fd);
+        pthread_t thread_id;
+        if (pthread_create(&thread_id, NULL, handle_client, client_fd) != 0) {
+            perror("pthread_create");
+            close(*client_fd);
+            free(client_fd);
+        } else {
+            pthread_detach(thread_id);
         }
     }
 
