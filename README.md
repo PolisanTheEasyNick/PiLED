@@ -83,8 +83,8 @@ Sets up RGB color, defined in `PAYLOAD` to GPIO pins.
 
 ## LED_GET_CURRENT_COLOR
 Request size: 50 bytes (`HEADER` + `HMAC` without `PAYLOAD`)  
-Response size: 11 bytes  
-The response contains `timestamp` when response package created (8 bytes) and RGB values (3 bytes summary respectively).  
+Response size: 0 bytes  
+Triggers `SYS_COLOR_CHANGED` call, which will send current color.  
 
 ## ANIM_SET_FADE
 Request size: 55 bytes (`HEADER` + `HMAC` + `PAYLOAD`)  

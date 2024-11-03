@@ -62,16 +62,16 @@ void remove_client_fd(int client_fd) {
 }
 
 void stop_animation() {
-    pthread_mutex_lock(&animation_mutex);
+    logger_debug("Stop animation function called.");
+    // pthread_mutex_lock(&animation_mutex);
     if (is_animating) {
         is_animating = 0;
-        if (animation_thread)
+        if (animation_thread) {
             pthread_join(animation_thread, NULL);
-
-        pthread_mutex_unlock(&animation_mutex);
-    } else {
-        pthread_mutex_unlock(&animation_mutex);
+            animation_thread = 0;
+        }
     }
+    // pthread_mutex_unlock(&animation_mutex);
 }
 
 void *handle_client(void *client_sock) {
@@ -129,30 +129,14 @@ void *handle_client(void *client_sock) {
                 switch (result.version) {
                 case 4:
                 case 3: {
-                    logger("v3, OP is: %d", result.OP);
+                    logger("v%d, OP is: %d", result.version, result.OP);
                     switch (result.OP) {
                     case LED_SET_COLOR: {
                         set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
                         break;
                     }
                     case LED_GET_CURRENT_COLOR: {
-                        unsigned char current_color[11];
-                        uint64_t current_time = time(NULL);
-                        struct Color last_color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
-                                                   get_PWM_dutycycle(pi, BLUE_PIN)};
-                        logger("Current color is: 0x%x 0x%x 0x%x", last_color.RED, last_color.GREEN, last_color.BLUE);
-                        memset(current_color, 0, 11);
-                        memcpy(current_color, (unsigned char *)&current_time, 8);
-                        current_color[8] = last_color.RED;
-                        current_color[9] = last_color.GREEN;
-                        current_color[10] = last_color.BLUE;
-#ifdef DEBUG
-                        for (short i = 0; i < 11; i++) {
-                            printf("%x ", current_color[i]);
-                        }
-                        printf("\n");
-#endif
-                        send(client_fd, current_color, 11, 0);
+                        send_info_about_color();
                         break;
                     }
                     case ANIM_SET_FADE: {
@@ -160,12 +144,14 @@ void *handle_client(void *client_sock) {
                         struct fade_animation_args *args = malloc(sizeof(struct fade_animation_args));
                         args->pi = pi;
                         args->speed = result.speed;
+                        pthread_mutex_lock(&animation_mutex);
                         if (pthread_create(&animation_thread, NULL, start_fade_animation, (void *)args) != 0) {
                             perror("Failed to create thread");
                             free(args);
                         } else {
                             logger("Started fade animation thread!");
                         }
+                        pthread_mutex_unlock(&animation_mutex);
                         break;
                     }
                     case ANIM_SET_PULSE: {
@@ -174,12 +160,14 @@ void *handle_client(void *client_sock) {
                         args->pi = pi;
                         args->color = (struct Color){result.RED, result.GREEN, result.BLUE};
                         args->duration = result.duration;
+                        pthread_mutex_lock(&animation_mutex);
                         if (pthread_create(&animation_thread, NULL, start_pulse_animation, (void *)args) != 0) {
                             perror("Failed to create thread");
                             free(args);
                         } else {
                             logger("Started pulse animation thread!");
                         }
+                        pthread_mutex_unlock(&animation_mutex);
                         break;
                     }
                     case SYS_TOGGLE_SUSPEND: {
@@ -301,8 +289,10 @@ int start_server(int pi, int port) {
     return 0;
 }
 
-void send_info_about_new_color(struct Color color) {
-    logger_debug("Sending info about new color: %d %d %d", color.RED, color.GREEN, color.BLUE);
+void send_info_about_color() {
+    struct Color color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
+                          get_PWM_dutycycle(pi, BLUE_PIN)};
+    logger_debug("Sending info about current color: %d %d %d", color.RED, color.GREEN, color.BLUE);
     // generating HEADER
     uint8_t HEADER[18];
 
