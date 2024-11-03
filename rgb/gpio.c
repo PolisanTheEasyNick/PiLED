@@ -19,12 +19,14 @@ void set_color(int pi, struct Color color) {
     set_PWM_dutycycle(pi, BLUE_PIN, color.BLUE);
 
     openrgb_set_color_on_devices(color);
+    // will spam at animation :3
+    // but will be synced with UI on clients
+    // sending info about new color to all clients
+    send_info_about_color();
 }
 
 void set_color_duration(int pi, struct Color color, uint8_t duration) {
-    is_animating = 0; // stop animation if any
-    if (animation_thread)
-        pthread_detach(animation_thread);
+    stop_animation();
     set_color_duration_anim(pi, color, duration);
 }
 
@@ -63,55 +65,125 @@ void set_color_duration_anim(int pi, struct Color color, uint8_t duration) {
 
 void fade_out(int pi, uint8_t color_pin, uint8_t speed) {
     for (int i = get_PWM_dutycycle(pi, color_pin); i < 255; i++) {
-        if (!is_animating || stop_server)
+        pthread_mutex_lock(&animation_mutex);
+        if (!is_animating || stop_server) {
+            pthread_mutex_unlock(&animation_mutex);
             return;
+        }
+        pthread_mutex_unlock(&animation_mutex);
+
         set_PWM_dutycycle(pi, color_pin, i);
+        struct Color cur_color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
+                                  get_PWM_dutycycle(pi, BLUE_PIN)};
+        openrgb_set_color_on_devices(cur_color);
+        send_info_about_color();
         usleep(5000 / speed);
     }
 }
 
 void fade_in(int pi, uint8_t color_pin, uint8_t speed) {
     for (int i = get_PWM_dutycycle(pi, color_pin); i > 0; i--) {
-        if (!is_animating || stop_server)
+        pthread_mutex_lock(&animation_mutex);
+        if (!is_animating || stop_server) {
+            pthread_mutex_unlock(&animation_mutex);
             return;
+        }
+        pthread_mutex_unlock(&animation_mutex);
+
         set_PWM_dutycycle(pi, color_pin, i);
+        struct Color cur_color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
+                                  get_PWM_dutycycle(pi, BLUE_PIN)};
+        openrgb_set_color_on_devices(cur_color);
+        send_info_about_color();
         usleep(5000 / speed);
     }
 }
 
+int check_to_stop_anim() {
+    logger_debug("Checking whether to stop animation...");
+    pthread_mutex_lock(&animation_mutex);
+    if (!is_animating || stop_server) {
+        pthread_mutex_unlock(&animation_mutex);
+        logger_debug("Stopping animation...");
+        return 1;
+    }
+    pthread_mutex_unlock(&animation_mutex);
+    logger_debug("Not stopping animation.");
+    return 0;
+}
+
 void *start_fade_animation(void *arg) {
+    pthread_mutex_lock(&animation_mutex);
     is_animating = 1;
+    pthread_mutex_unlock(&animation_mutex);
+
     struct fade_animation_args *args = (struct fade_animation_args *)arg;
     int pi = args->pi;
     uint8_t speed = args->speed;
-    while (is_animating && !stop_server) {
-        logger("Animating with speed %d...", speed);
+
+    while (1) {
+        if (check_to_stop_anim())
+            break;
+
+        logger("Animating fade with speed %d...", speed);
         fade_in(pi, RED_PIN, speed);
+        if (check_to_stop_anim())
+            break;
         fade_in(pi, BLUE_PIN, speed);
+        if (check_to_stop_anim())
+            break;
         fade_out(pi, RED_PIN, speed);
+        if (check_to_stop_anim())
+            break;
         fade_in(pi, GREEN_PIN, speed);
+        if (check_to_stop_anim())
+            break;
         fade_out(pi, BLUE_PIN, speed);
+        if (check_to_stop_anim())
+            break;
         fade_in(pi, RED_PIN, speed);
+        if (check_to_stop_anim())
+            break;
         fade_out(pi, GREEN_PIN, speed);
+        if (check_to_stop_anim())
+            break;
         fade_out(pi, RED_PIN, speed);
+        if (check_to_stop_anim())
+            break;
     }
     pthread_exit(NULL);
 }
 
 void *start_pulse_animation(void *arg) {
+    pthread_mutex_lock(&animation_mutex);
     is_animating = 1;
+    pthread_mutex_unlock(&animation_mutex);
+
     struct pulse_animation_args *args = (struct pulse_animation_args *)arg;
     int pi = args->pi;
     struct Color color = args->color;
     uint8_t duration = args->duration;
+
     set_color_duration_anim(pi, color, 3);
     logger("Before while..... is_anim: %d, is stop server: %d", is_animating, stop_server);
-    while (is_animating && !stop_server) {
+
+    while (1) {
+        pthread_mutex_lock(&animation_mutex);
+        if (!is_animating || stop_server) {
+            pthread_mutex_unlock(&animation_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&animation_mutex);
+
         logger("Animating PULSE with duration %d...", duration);
         set_color_duration_anim(pi, (struct Color){0, 0, 0}, duration);
+        check_to_stop_anim();
         usleep(1000);
+        check_to_stop_anim();
         set_color_duration_anim(pi, color, duration);
+        check_to_stop_anim();
         usleep(500);
+        check_to_stop_anim();
     }
     pthread_exit(NULL);
 }

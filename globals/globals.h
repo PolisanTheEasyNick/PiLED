@@ -35,5 +35,6 @@ extern uint8_t pi; // should be inited by main
 #define ANIM_SET_FADE 2
 #define ANIM_SET_PULSE 3
 #define SYS_TOGGLE_SUSPEND 4
+#define SYS_COLOR_CHANGED 5
 
 #endif // GLOBALS_H

@@ -28,9 +28,6 @@ volatile sig_atomic_t openrgb_stop_server = 0, openrgb_needs_reinit = 0, openrgb
 struct openrgb_device *openrgb_devices_to_change;
 
 void openrgb_init_header(uint8_t *header, uint32_t pkt_dev_idx, uint32_t pkt_id, uint32_t pkg_size) {
-    // as per 11.09.2024 only God and me knows how pointers works here
-    // as per future only God will know.
-
     // adding magick
     header[0] = 'O';
     header[1] = 'R';

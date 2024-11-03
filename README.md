@@ -60,13 +60,14 @@ Must be generated with SHA-256 algorithm with using `shared_secret` which writed
 `HMAC(SHA-256, shared_secret, header + payload)`
 
 ## Operational Codes
-| Value | Name                                            | Description                           |
-| :---: | :---------------------------------------------: | ------------------------------------- |
-| 0     | [LED_SET_COLOR](#led_set_color)                 | Set RGB color, described in PAYLOAD   |
-| 1     | [LED_GET_CURRENT_COLOR](#led_get_current_color) | Request led-server current LEDs color |
-| 2     | [ANIM_SET_FADE](#anim_set_fade)                 | Start FADE animation                  |
-| 3     | [ANIM_SET_PULSE](#anim_set_pulse)               | Start PULSE animation                 |
-| 4     | [SYS_TOGGLE_SUSPEND](#sys_toggle_suspend)       | Toggle suspend mode                   |
+| Value | Name                                            | Description                                     |
+| :---: | :---------------------------------------------: | ----------------------------------------------- |
+| 0     | [LED_SET_COLOR](#led_set_color)                 | Set RGB color, described in PAYLOAD             |
+| 1     | [LED_GET_CURRENT_COLOR](#led_get_current_color) | Request led-server current LEDs color           |
+| 2     | [ANIM_SET_FADE](#anim_set_fade)                 | Start FADE animation                            |
+| 3     | [ANIM_SET_PULSE](#anim_set_pulse)               | Start PULSE animation                           |
+| 4     | [SYS_TOGGLE_SUSPEND](#sys_toggle_suspend)       | Toggle suspend mode                             |
+| 5     | [SYS_COLOR_CHANGED](#sys_color_changed)         | Sent from server to all clients about new color |
 
 
 ## PAYLOAD Structure
@@ -87,8 +88,8 @@ Sets up RGB color, defined in `PAYLOAD` to GPIO pins.
 
 ## LED_GET_CURRENT_COLOR
 Request size: 50 bytes (`HEADER` + `HMAC` without `PAYLOAD`)  
-Response size: 11 bytes  
-The response contains `timestamp` when response package created (8 bytes) and RGB values (3 bytes summary respectively).  
+Response size: 0 bytes  
+Triggers `SYS_COLOR_CHANGED` call, which will send current color.  
 
 ## ANIM_SET_FADE
 Request size: 55 bytes (`HEADER` + `HMAC` + `PAYLOAD`)  
@@ -106,6 +107,11 @@ Response size: 0 bytes (no response).
 Toggles Suspend mode.  
 While suspended, it will turn off all lights and ignore all commands but `SYS_TOGGLE_SUSPEND`.
 On suspend off will set given color from payload.
+
+## SYS_COLOR_CHANGED
+Request size: 0 bytes.  
+Response size: 55 bytes. (`HEADER` + `HMAC` + `PAYLOAD`)
+Sends info about new color to all clients.  
 
 ## Client Side Workflow
 1. Generate Timestamp and Nonce  
