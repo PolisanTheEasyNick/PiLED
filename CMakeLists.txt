@@ -7,7 +7,10 @@ set(CMAKE_CXX_FLAGS "-Wno-dev")
 option(WITH_HTML "Build with HTML support" OFF)
 option(WITH_WS "Build with WebSocket support" OFF)
 
-#add_definitions(-DDEBUG) #DANGEROUS! IT WILL SKIP SECURITY CHECKS
+add_definitions(-DDEBUG) #DANGEROUS! IT WILL SKIP SECURITY CHECKS
+if(DEBUG)
+  message(WARNING "!!!  DEBUG MODE IS ON  !!! ALL SECURITY CHECKS ARE SKIPPED")
+endif()
 
 include(pigpio/util/Findpigpio.cmake) #sets pigpio_INCLUDE_DIRS and pigpiod_if2_LIBRARY if found in system
 find_package(OpenSSL REQUIRED)

@@ -19,6 +19,10 @@ void set_color(int pi, struct Color color) {
     set_PWM_dutycycle(pi, BLUE_PIN, color.BLUE);
 
     openrgb_set_color_on_devices(color);
+    // will spam at animation :3
+    // but will be synced with UI on clients
+    // sending info about new color to all clients
+    send_info_about_new_color(color);
 }
 
 void set_color_duration(int pi, struct Color color, uint8_t duration) {

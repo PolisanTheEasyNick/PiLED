@@ -18,9 +18,12 @@ struct pulse_animation_args {
     uint8_t duration;
 };
 
+// operational functions
 void set_color(int pi, struct Color color);
 void set_color_duration_anim(int pi, struct Color color, uint8_t duration);
 void set_color_duration(int pi, struct Color color, uint8_t duration);
+
+// animations
 void *start_fade_animation(void *arg);
 void *start_pulse_animation(void *arg);
 
