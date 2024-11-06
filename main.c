@@ -28,6 +28,9 @@ void handle_sigint(int sig) {
 int main(int argc, char *argv[]) {
     signal(SIGINT, handle_sigint);
 
+    // ingoring SIGPIPE, which may be called when client sent package but ignores output
+    signal(SIGPIPE, SIG_IGN);
+
     if (load_config() != 0) {
         return -1;
     }

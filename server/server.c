@@ -333,7 +333,17 @@ void send_info_about_color() {
     memcpy(tcp_package + 18, GENERATED_HMAC, 32);
     memcpy(tcp_package + 50, PAYLOAD, 5);
     for (int client = 0; client < clients_count; client++) {
-        logger_debug("Sending package to %d", clients_fds[client]);
-        send(clients_fds[client], tcp_package, 55, MSG_DONTWAIT);
+        logger_debug("Sending package to client fd %d", clients_fds[client]);
+        ssize_t sent_bytes = send(clients_fds[client], tcp_package, 55, MSG_DONTWAIT);
+        if (sent_bytes < 0) {
+            perror("send");
+            logger_debug("Failed to send to client fd %d, removing client", clients_fds[client]);
+            close(clients_fds[client]);
+            for (int j = client; j < clients_count - 1; j++) {
+                clients_fds[j] = clients_fds[j + 1];
+            }
+            clients_count--;
+            client--;
+        }
     }
 }
