@@ -339,11 +339,7 @@ void send_info_about_color() {
             perror("send");
             logger_debug("Failed to send to client fd %d, removing client", clients_fds[client]);
             close(clients_fds[client]);
-            for (int j = client; j < clients_count - 1; j++) {
-                clients_fds[j] = clients_fds[j + 1];
-            }
-            clients_count--;
-            client--;
+            remove_client_fd(clients_fds[client]);
         }
     }
 }
