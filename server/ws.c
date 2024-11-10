@@ -65,13 +65,13 @@ void ws_server_init(uint8_t pi_) {
 
     context = lws_create_context(&info);
     if (!context) {
-        fprintf(stderr, "lws create context failed\n");
+        logger_debug(stderr, "lws create context failed\n");
         return;
     }
 
     pthread_t thread;
     if (pthread_create(&thread, NULL, event_loop, context) != 0) {
-        fprintf(stderr, "Failed to create event loop thread\n");
+        logger_debug(stderr, "Failed to create event loop thread\n");
         lws_context_destroy(context);
         return;
     }

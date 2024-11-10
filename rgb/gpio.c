@@ -13,7 +13,7 @@ uint8_t is_animating = 0;
 pthread_mutex_t animation_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void set_color(int pi, struct Color color) {
-    logger("set_color: Setting colors: %d %d %d on RPi #%d", color.RED, color.GREEN, color.BLUE, pi);
+    logger_debug("set_color: Setting colors: %d %d %d on RPi #%d", color.RED, color.GREEN, color.BLUE, pi);
     set_PWM_dutycycle(pi, RED_PIN, color.RED);
     set_PWM_dutycycle(pi, GREEN_PIN, color.GREEN);
     set_PWM_dutycycle(pi, BLUE_PIN, color.BLUE);
@@ -31,31 +31,32 @@ void set_color_duration(int pi, struct Color color, uint8_t duration) {
 }
 
 void set_color_duration_anim(int pi, struct Color color, uint8_t duration) {
-    logger("set_color_duration: Setting colors: %d %d %d on RPi #%d", color.RED, color.GREEN, color.BLUE, pi);
-    logger("set_color_duration: duration is %d seconds.", duration);
+    logger_debug("set_color_duration: Setting colors: %d %d %d on RPi #%d", color.RED, color.GREEN, color.BLUE, pi);
+    logger_debug("set_color_duration: duration is %d seconds.", duration);
     if (duration == 0) {
         set_color(pi, color);
     } else {
         is_animating = 1;
         struct Color last_color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
                                    get_PWM_dutycycle(pi, BLUE_PIN)};
-        logger("set_color_duration: Got last color %d %d %d", last_color.RED, last_color.GREEN, last_color.BLUE);
+        logger_debug("set_color_duration: Got last color %d %d %d", last_color.RED, last_color.GREEN, last_color.BLUE);
         short red_step_size = color.RED - last_color.RED;
         short green_step_size = color.GREEN - last_color.GREEN;
         short blue_step_size = color.BLUE - last_color.BLUE;
 
-        logger("set_color_duration: Calculated step sizes %d %d %d", red_step_size, green_step_size, blue_step_size);
+        logger_debug("set_color_duration: Calculated step sizes %d %d %d", red_step_size, green_step_size,
+                     blue_step_size);
 
         uint32_t step_duration_us = (duration * 1000000) / TRANSITION_STEPS;
 
         for (uint8_t step = 0; step < TRANSITION_STEPS; step++) {
             if (!is_animating)
                 return;
-            logger("set_color_duration: step #%d", step);
+            logger_debug("set_color_duration: step #%d", step);
             short red = last_color.RED + (red_step_size * step) / TRANSITION_STEPS;
             short green = last_color.GREEN + (green_step_size * step) / TRANSITION_STEPS;
             short blue = last_color.BLUE + (blue_step_size * step) / TRANSITION_STEPS;
-            logger("set_color_duration: setting color %d %d %d", red, green, blue);
+            logger_debug("set_color_duration: setting color %d %d %d", red, green, blue);
             set_color(pi, (struct Color){red, green, blue});
             usleep(step_duration_us);
         }
@@ -125,7 +126,7 @@ void *start_fade_animation(void *arg) {
         if (check_to_stop_anim())
             break;
 
-        logger("Animating fade with speed %d...", speed);
+        logger_debug("Animating fade with speed %d...", speed);
         fade_in(pi, RED_PIN, speed);
         if (check_to_stop_anim())
             break;
@@ -165,7 +166,7 @@ void *start_pulse_animation(void *arg) {
     uint8_t duration = args->duration;
 
     set_color_duration_anim(pi, color, 3);
-    logger("Before while..... is_anim: %d, is stop server: %d", is_animating, stop_server);
+    logger_debug("Before while..... is_anim: %d, is stop server: %d", is_animating, stop_server);
 
     while (1) {
         pthread_mutex_lock(&animation_mutex);
@@ -175,7 +176,7 @@ void *start_pulse_animation(void *arg) {
         }
         pthread_mutex_unlock(&animation_mutex);
 
-        logger("Animating PULSE with duration %d...", duration);
+        logger_debug("Animating PULSE with duration %d...", duration);
         set_color_duration_anim(pi, (struct Color){0, 0, 0}, duration);
         check_to_stop_anim();
         usleep(1000);

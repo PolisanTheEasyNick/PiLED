@@ -25,7 +25,7 @@ void add_client_fd(int client_fd) {
 
     int *new_clients_fds = realloc(clients_fds, sizeof(int) * (clients_count + 1));
     if (new_clients_fds == NULL) {
-        perror("Failed to realloc memory for clients_fds");
+        logger("Failed to realloc memory for clients_fds");
         close(client_fd);
     } else {
         clients_fds = new_clients_fds;
@@ -111,11 +111,11 @@ void *handle_client(void *client_sock) {
                 perror("recv");
                 break;
             } else if (bytes_received == 0) {
-                logger("Client disconnected\n");
+                logger("Client with fd %d disconnected\n", client_fd);
                 break;
             }
 
-            logger("Received: %d bytes.", bytes_received);
+            logger_debug("Received: %d bytes.", bytes_received);
             struct parse_result result = parse_message(buffer);
 
             if (is_suspended && result.OP != SYS_TOGGLE_SUSPEND) {
@@ -123,23 +123,27 @@ void *handle_client(void *client_sock) {
                 continue;
             }
 
-            logger("Result of parsing: %d", result.result);
+            logger_debug("Result of parsing: %d", result.result);
             if (result.result == 0) {
-                logger("Successfully parsed and checked packet, processing. v%d", result.version);
+                logger_debug("Successfully parsed and checked packet, processing. v%d", result.version);
                 switch (result.version) {
                 case 4:
                 case 3: {
-                    logger("v%d, OP is: %d", result.version, result.OP);
+                    logger_debug("v%d, OP is: %d", result.version, result.OP);
                     switch (result.OP) {
                     case LED_SET_COLOR: {
+                        logger("Requested LED_SET_COLOR with %d %d %d on %d seconds, setting.", result.RED,
+                               result.GREEN, result.BLUE, result.duration);
                         set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
                         break;
                     }
                     case LED_GET_CURRENT_COLOR: {
+                        logger("Requested LED_GET_CURRENT_COLOR, sending...");
                         send_info_about_color();
                         break;
                     }
                     case ANIM_SET_FADE: {
+                        logger("Requested ANIM_SET_FADE.");
                         stop_animation();
                         struct fade_animation_args *args = malloc(sizeof(struct fade_animation_args));
                         args->pi = pi;
@@ -155,6 +159,7 @@ void *handle_client(void *client_sock) {
                         break;
                     }
                     case ANIM_SET_PULSE: {
+                        logger("Requested ANIM_SET_PULSE");
                         stop_animation();
                         struct pulse_animation_args *args = malloc(sizeof(struct pulse_animation_args));
                         args->pi = pi;
@@ -171,6 +176,7 @@ void *handle_client(void *client_sock) {
                         break;
                     }
                     case SYS_TOGGLE_SUSPEND: {
+                        logger("Requested SYS_TOGGLE_SUSPEND.");
                         stop_animation();
                         is_suspended = !is_suspended;
                         set_color_duration(pi,

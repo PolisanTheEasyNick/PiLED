@@ -11,15 +11,15 @@ uint8_t parse_config(const char *config_file) {
     config_init(&cfg);
 
     if (!config_read_file(&cfg, config_file)) {
-        fprintf(stderr, "Error reading config file: %s\n", config_error_text(&cfg));
+        logger("Error reading config file: %s\n", config_error_text(&cfg));
         config_destroy(&cfg);
         return 1;
     }
-    logger("Opened config file");
+    logger_debug("Opened config file");
 #ifndef ORGBCONFIGURATOR
     const char *addr;
     if (!config_lookup_string(&cfg, "PI_ADDR", &addr)) {
-        fprintf(stderr, "Missing PI_ADDR in config file, using default (NULL)\n");
+        logger("Missing PI_ADDR in config file, using default (NULL)\n");
         PI_ADDR = NULL;
     } else {
         PI_ADDR = malloc(strlen(addr) + 1);
@@ -29,7 +29,7 @@ uint8_t parse_config(const char *config_file) {
 
     const char *port;
     if (!config_lookup_string(&cfg, "PI_PORT", &port)) {
-        fprintf(stderr, "Missing PI_PORT in config file, using default (8888)\n");
+        logger("Missing PI_PORT in config file, using default (8888)\n");
         PI_PORT = NULL;
     } else {
         PI_PORT = malloc(strlen(port) + 1);
@@ -38,24 +38,24 @@ uint8_t parse_config(const char *config_file) {
     }
 
     if (!config_lookup_int(&cfg, "RED_PIN", &RED_PIN)) {
-        fprintf(stderr, "Missing RED_PIN in config file!\n");
+        logger("Missing RED_PIN in config file!\n");
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
 
     if (!config_lookup_int(&cfg, "GREEN_PIN", &GREEN_PIN)) {
-        fprintf(stderr, "Missing GREEN_PIN in config file!\n");
+        logger("Missing GREEN_PIN in config file!\n");
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
     if (!config_lookup_int(&cfg, "BLUE_PIN", &BLUE_PIN)) {
-        fprintf(stderr, "Missing BLUE_PIN in config file!\n");
+        logger("Missing BLUE_PIN in config file!\n");
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
     const char *secret;
     if (!config_lookup_string(&cfg, "SHARED_SECRET", &secret)) {
-        fprintf(stderr, "Missing SHARED_SECRET in config file\n");
+        logger("Missing SHARED_SECRET in config file\n");
         SHARED_SECRET = NULL;
         return -1;
     }
@@ -65,7 +65,7 @@ uint8_t parse_config(const char *config_file) {
 #endif
     const char *openrgb_addr;
     if (!config_lookup_string(&cfg, "OPENRGB_SERVER", &openrgb_addr)) {
-        fprintf(stderr, "Missing OPENRGB_SERVER in config file\n");
+        logger("Missing OPENRGB_SERVER in config file\n");
         OPENRGB_SERVER = NULL;
     } else {
         OPENRGB_SERVER = malloc(strlen(openrgb_addr) + 1);
@@ -74,7 +74,7 @@ uint8_t parse_config(const char *config_file) {
     }
 
     if (!config_lookup_int(&cfg, "OPENRGB_PORT", &OPENRGB_PORT)) {
-        fprintf(stderr, "Missing OPENRGB_PORT in config file, using default 6742\n");
+        logger("Missing OPENRGB_PORT in config file, using default 6742\n");
         OPENRGB_PORT = 6742;
     }
 #ifndef ORGBCONFIGURATOR
@@ -142,7 +142,7 @@ void parse_args(int argc, char *argv[]) {
 }
 
 uint8_t try_load_config(const char *config_path) {
-    logger("Trying to load config from: %s", config_path);
+    logger_debug("Trying to load config from: %s", config_path);
     return parse_config(config_path);
 }
 

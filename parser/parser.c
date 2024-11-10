@@ -20,22 +20,22 @@ struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, 
     BLUE |= buffer[payload_offset + 2] & 0xFF;
     if (version >= 2) {
         duration |= buffer[payload_offset + 3] & 0xFF;
-        logger("parse_message: Version: %d, got duration: %d", version, duration);
+        logger_debug("parse_message: Version: %d, got duration: %d", version, duration);
     }
     if (version >= 4) {
         speed |= buffer[payload_offset + 4] & 0xFF;
-        logger("parse_message: Version: %d, got speed: %d", version, speed);
+        logger_debug("parse_message: Version: %d, got speed: %d", version, speed);
     }
 
-    logger("parse_message: Color: R: 0x%x, G: 0x%x, B: 0x%x", RED, GREEN, BLUE);
+    logger_debug("parse_message: Color: R: 0x%x, G: 0x%x, B: 0x%x", RED, GREEN, BLUE);
     const int HMAC_DATA_SIZE = sizes.header_size + sizes.payload_size;
-    logger("parse_message: data for hmac size: %d; payload size: %d", HMAC_DATA_SIZE, sizes.payload_size);
+    logger_debug("parse_message: data for hmac size: %d; payload size: %d", HMAC_DATA_SIZE, sizes.payload_size);
     unsigned char HMAC_DATA[HMAC_DATA_SIZE];
     memset(HMAC_DATA, 0, HMAC_DATA_SIZE);
     memcpy(HMAC_DATA, buffer, sizes.header_size);                                       // HEADER
     memcpy(&HMAC_DATA[sizes.header_size], &buffer[payload_offset], sizes.payload_size); // PAYLOAD
 
-    logger("parse_message: HEADER + PAYLOAD:");
+    logger_debug("parse_message: HEADER + PAYLOAD:");
     for (int i = 0; i < HMAC_DATA_SIZE; i++) {
         printf("%x ", HMAC_DATA[i]);
     }
@@ -47,23 +47,25 @@ struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, 
     unsigned char GENERATED_HMAC[32];
     unsigned int hmac_len;
     HMAC(EVP_sha256(), key, key_length, HMAC_DATA, HMAC_DATA_SIZE, GENERATED_HMAC, &hmac_len);
+#ifdef DEBUG
     printf("parse_message: Generated HMAC length: %d, HMAC:\n", hmac_len);
     for (int i = 0; i < 32; i++) {
         printf("%x ", GENERATED_HMAC[i]);
     }
     printf("\n");
+#endif
 
 #ifndef DEBUG
-    logger("parse_message: Comparing HMAC's...");
+    logger_debug("parse_message: Comparing HMAC's...");
     for (unsigned short i = 0; i < 32; i++) {
         if (GENERATED_HMAC[i] != PARSED_HMAC[i]) {
-            logger("parse_message: HMACs are NOT the sa-*kabooom*");
+            logger_debug("parse_message: HMACs are NOT the sa-*kabooom*");
             struct parse_result err;
             err.result = 1;
             return err;
         }
     }
-    logger("parse_message: HMACs are same, nothing exploded!");
+    logger_debug("parse_message: HMACs are same, nothing exploded!");
 #endif
 
     struct parse_result res;
@@ -78,7 +80,7 @@ struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, 
 }
 
 struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
-    logger("parse_message: received buffer: ");
+    logger_debug("parse_message: received buffer: ");
     for (int i = 0; i < BUFFER_SIZE; i++) {
         printf("%x ", buffer[i]);
     }
@@ -90,10 +92,10 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
         if (i != 7)
             timestamp <<= 8;
     }
-    logger("parse_message: extracted timestamp %lu: 0x%lx\n", timestamp, timestamp);
+    logger_debug("parse_message: extracted timestamp %lu: 0x%lx\n", timestamp, timestamp);
 
     uint64_t current_time = time(NULL); // must be 64-bit on modern systems
-    logger("parse_message: current timestamp: %lu", current_time);
+    logger_debug("parse_message: current timestamp: %lu", current_time);
 
 #ifndef DEBUG
     unsigned short difference;
@@ -104,12 +106,12 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
     }
 
     if (difference <= 5) {
-        logger("parse_message: the timestamp is within allowed time difference of "
-               "5 seconds.");
+        logger_debug("parse_message: the timestamp is within allowed time difference of "
+                     "5 seconds.");
     } else {
-        logger("parse_message: Error! Timestamp difference is too big (%d "
-               "seconds.)! Aborting.",
-               difference);
+        logger_debug("parse_message: Error! Timestamp difference is too big (%d "
+                     "seconds.)! Aborting.",
+                     difference);
         struct parse_result err;
         err.result = 1;
         return err;
@@ -123,68 +125,70 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
         if (i != 15)
             nonce <<= 8;
     }
-    logger("parse_message: nonce: 0x%lx\n", nonce);
+    logger_debug("parse_message: nonce: 0x%lx\n", nonce);
 
     // VERSION
     uint8_t version = 0;
     version |= buffer[16] & 0xFF;
-    logger("parse_message: version: 0x%lx; v%d\n", version, version);
+    logger_debug("parse_message: version: 0x%lx; v%d\n", version, version);
 
     struct section_sizes sizes = get_section_sizes(version);
 
     uint8_t OP = 0;
     if (version >= 3) {
         OP = buffer[sizes.header_size - 1] & 0xFF;
-        logger("parse_message: Operational code is: 0x%x", OP);
+        logger_debug("parse_message: Operational code is: 0x%x", OP);
     }
 
     // HMAC
     unsigned char PARSED_HMAC[32];
     memcpy(PARSED_HMAC, &buffer[sizes.header_size], 32);
+#ifdef DEBUG
     logger("parse_message: Parsed HMAC from buffer:");
     for (unsigned short i = 0; i < 32; i++) {
         printf("%x ", PARSED_HMAC[i]);
     }
     printf("\n");
+#endif
     struct parse_result result;
     switch (OP) {
     case LED_SET_COLOR: { // SET COLOR
-        logger("parse_message: Operational code is 0, setting color");
+        logger_debug("parse_message: Operational code is 0, setting color");
         result = parse_payload(buffer, version, PARSED_HMAC);
         result.OP = LED_SET_COLOR;
         break;
     };
     case LED_GET_CURRENT_COLOR: { // GET COLOR
         // TODO: HMAC check?? No point since get color request not sensible?
-        logger("parse_message: OP code is LED_GET_CURRENT_COLOR, getting color");
+        logger_debug("parse_message: OP code is LED_GET_CURRENT_COLOR, getting color");
         result.result = 0;
         result.OP = LED_GET_CURRENT_COLOR;
         result.version = 3; // minimal for this OP; change logic in future?
         break;
     }
     case ANIM_SET_FADE: {
-        logger("parse_message: OP code is ANIM_SET_FADE, starting FADE animation");
+        logger_debug("parse_message: OP code is ANIM_SET_FADE, starting FADE animation");
         result = parse_payload(buffer, version, PARSED_HMAC);
         result.OP = ANIM_SET_FADE;
         result.version = 4;
         break;
     }
     case ANIM_SET_PULSE: {
-        logger("parse_message: OP code is ANIM_SET_PULSE, setting PULSE animation");
+        logger_debug("parse_message: OP code is ANIM_SET_PULSE, setting PULSE animation");
         result = parse_payload(buffer, version, PARSED_HMAC);
         result.OP = ANIM_SET_PULSE;
         result.version = 4;
         break;
     }
     case SYS_TOGGLE_SUSPEND: {
-        logger("parse_message: OP code is SYS_TOGGLE_SUSPEND.");
+        logger_debug("parse_message: OP code is SYS_TOGGLE_SUSPEND.");
         result = parse_payload(buffer, version, PARSED_HMAC);
         result.OP = SYS_TOGGLE_SUSPEND;
         result.version = 4;
         break;
     }
     default: {
-        logger("parse_message: Unknown OP (%d), aborting!", OP);
+        logger_debug("parse_message: Unknown OP (%d), aborting!", OP);
         result.result = 1;
         break;
     }
@@ -195,7 +199,7 @@ struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
 int count_valid_lines(const char *config_file) {
     FILE *file = fopen(config_file, "r");
     if (file == NULL) {
-        perror("Failed to open config file");
+        logger("Failed to open config file");
         return -1;
     }
 
@@ -240,7 +244,7 @@ void parse_openrgb_config_devices(const char *config_file) {
 
         uint8_t *colon_pos = (uint8_t *)strchr((char *)content, ':');
         if (colon_pos == NULL) {
-            fprintf(stderr, "Invalid line format: %s", line);
+            logger("Invalid line format: %s", line);
             continue;
         }
 
