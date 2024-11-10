@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
     pi = pigpio_start(PI_ADDR, PI_PORT);
     if (pi < 0) {
-        fprintf(stderr, "Pigpio initialization failed.\n");
+        logger("Pigpio initialization failed.\n");
         return 1;
     }
     logger("Connected to pigpio daemon successfully!");

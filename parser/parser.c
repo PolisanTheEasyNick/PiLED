@@ -35,11 +35,13 @@ struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, 
     memcpy(HMAC_DATA, buffer, sizes.header_size);                                       // HEADER
     memcpy(&HMAC_DATA[sizes.header_size], &buffer[payload_offset], sizes.payload_size); // PAYLOAD
 
+#ifdef DEBUG
     logger_debug("parse_message: HEADER + PAYLOAD:");
     for (int i = 0; i < HMAC_DATA_SIZE; i++) {
         printf("%x ", HMAC_DATA[i]);
     }
     printf("\n");
+#endif
 
     // generating new hmac
     char *key = SHARED_SECRET;
