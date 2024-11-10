@@ -29,7 +29,7 @@ Note that HTML and WS servers skips all security checks, so make sure to not exp
 * Basic color change
 * Smooth color change from current color to desired with given timing
 * Fade and Pulse animations
-* OpenRGB SDK support (refer to [OpenRGB](#openrgb) section)
+* [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) SDK support (refer to [OpenRGB](#openrgb) section)
 * WebSocket support for simpler controlling.
 
 LED PROTOCOL v4
