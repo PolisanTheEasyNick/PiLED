@@ -111,7 +111,6 @@ void *handle_client(void *client_sock) {
                 perror("recv");
                 break;
             } else if (bytes_received == 0) {
-                remove_client_fd(client_fd);
                 break;
             }
 
