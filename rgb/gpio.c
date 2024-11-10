@@ -169,6 +169,8 @@ void *start_pulse_animation(void *arg) {
     logger_debug("Before while..... is_anim: %d, is stop server: %d", is_animating, stop_server);
 
     while (1) {
+        if (check_to_stop_anim())
+            break;
         pthread_mutex_lock(&animation_mutex);
         if (!is_animating || stop_server) {
             pthread_mutex_unlock(&animation_mutex);
@@ -178,13 +180,17 @@ void *start_pulse_animation(void *arg) {
 
         logger_debug("Animating PULSE with duration %d...", duration);
         set_color_duration_anim(pi, (struct Color){0, 0, 0}, duration);
-        check_to_stop_anim();
+        if (check_to_stop_anim())
+            break;
         usleep(1000);
-        check_to_stop_anim();
+        if (check_to_stop_anim())
+            break;
         set_color_duration_anim(pi, color, duration);
-        check_to_stop_anim();
+        if (check_to_stop_anim())
+            break;
         usleep(500);
-        check_to_stop_anim();
+        if (check_to_stop_anim())
+            break;
     }
     pthread_exit(NULL);
 }
