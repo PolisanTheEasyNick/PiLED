@@ -82,11 +82,13 @@ struct parse_result parse_payload(unsigned char *buffer, const uint8_t version, 
 }
 
 struct parse_result parse_message(unsigned char buffer[BUFFER_SIZE]) {
+#ifdef DEBUG
     logger_debug("parse_message: received buffer: ");
     for (int i = 0; i < BUFFER_SIZE; i++) {
         printf("%x ", buffer[i]);
     }
     printf("\n");
+#endif
     // 8 first bytes is timestamp
     uint64_t timestamp = 0;
     for (unsigned short i = 0; i < 8; i++) {

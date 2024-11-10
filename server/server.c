@@ -31,7 +31,7 @@ void add_client_fd(int client_fd) {
         clients_fds = new_clients_fds;
         clients_fds[clients_count++] = client_fd;
     }
-
+    logger("Client with fd %d connected\n", client_fd);
     pthread_mutex_unlock(&clients_mutex);
 }
 
@@ -57,7 +57,7 @@ void remove_client_fd(int client_fd) {
             clients_fds = new_clients_fds;
         }
     }
-
+    logger("Client with fd %d disconnected\n", client_fd);
     pthread_mutex_unlock(&clients_mutex);
 }
 
@@ -111,7 +111,7 @@ void *handle_client(void *client_sock) {
                 perror("recv");
                 break;
             } else if (bytes_received == 0) {
-                logger("Client with fd %d disconnected\n", client_fd);
+                remove_client_fd(client_fd);
                 break;
             }
 
