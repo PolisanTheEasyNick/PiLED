@@ -88,7 +88,7 @@ Sets up RGB color, defined in `PAYLOAD` to GPIO pins.
 
 ## LED_GET_CURRENT_COLOR
 Request size: 50 bytes (`HEADER` + `HMAC` without `PAYLOAD`)  
-Response size: 0 bytes  
+Response size: 0 bytes (no response).  
 Triggers `SYS_COLOR_CHANGED` call, which will send current color.  
 
 ## ANIM_SET_FADE
@@ -97,8 +97,8 @@ Response size: 0 bytes (no response)
 Starts FADE animation. To `PAYLOAD` must be added `Speed` field as described at [PAYLOAD Structure](#payload-structure)
 
 ## ANIM_SET_PULSE
-Request size: 55 bytes (`HEADER` + `HMAC` + `PAYLOAD`)
-Response size: 0 bytes (no response)
+Request size: 55 bytes (`HEADER` + `HMAC` + `PAYLOAD`)  
+Response size: 0 bytes (no response)  
 Start PULSE animation. In `PAYLOAD` must be provided color fields and `Duration`.
 
 ## SYS_TOGGLE_SUSPEND
@@ -109,8 +109,8 @@ While suspended, it will turn off all lights and ignore all commands but `SYS_TO
 On suspend off will set given color from payload.
 
 ## SYS_COLOR_CHANGED
-Request size: 0 bytes.  
-Response size: 55 bytes. (`HEADER` + `HMAC` + `PAYLOAD`)
+Request size: 0 bytes (no response).  
+Response size: 55 bytes. (`HEADER` + `HMAC` + `PAYLOAD`)  
 Sends info about new color to all clients.  
 
 ## Client Side Workflow
