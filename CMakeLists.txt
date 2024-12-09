@@ -93,5 +93,12 @@ endif()
 
 install(DIRECTORY DESTINATION /etc/piled
   DIRECTORY_PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/piled.conf
-  DESTINATION /etc/piled/)
+
+install(CODE "
+  if(NOT EXISTS \"/etc/piled/piled.conf\")
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/piled.conf /etc/piled/piled.conf COPYONLY)
+    message(STATUS \"Installed piled.conf to /etc/piled\")
+  else()
+    message(STATUS \"piled.conf already exists, skipping installation.\")
+  endif()
+")
