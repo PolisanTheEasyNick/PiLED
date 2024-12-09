@@ -45,7 +45,7 @@ void openrgb_init_header(uint8_t *header, uint32_t pkt_dev_idx, uint32_t pkt_id,
 #endif
 }
 
-void openrgb_init() {
+void *openrgb_init() {
     openrgb_stop_server = 0;
     openrgb_needs_reinit = 0;
     openrgb_using_devices_num = 0;
@@ -56,14 +56,14 @@ void openrgb_init() {
     // connects to OpenRGB server, negotiates OpenRGB's SDK version and listens for responses
     if (pthread_mutex_init(&openrgb_send_mutex, NULL) != 0) {
         logger_debug("Mutex init failed\n");
-        return;
+        return NULL;
     }
 
     struct sockaddr_in server_addr;
     openrgb_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (openrgb_socket < 0) {
         logger_debug("Failed to create socket");
-        return;
+        return NULL;
     }
     logger_debug("Created socket.");
 
@@ -95,7 +95,7 @@ void openrgb_init() {
     if (pthread_create(&openrgb_recv_thread_id, NULL, openrgb_recv_thread, NULL) != 0) {
         logger_debug("Failed to create receive thread");
         close(openrgb_socket);
-        return;
+        return NULL;
     }
 
     // now all responses by openrgb will be received by recv thread.
@@ -129,7 +129,7 @@ void openrgb_init() {
         if (timeout_counter > 20) {
             logger_debug("Error! Can't get devices number!");
             openrgb_devices_num = 0;
-            return;
+            return NULL;
             break;
         }
     }
@@ -159,6 +159,7 @@ void openrgb_init() {
 #endif
 
     pthread_create(&openrgb_reconnect_thread_id, NULL, openrgb_reconnect_thread, NULL);
+    return NULL;
 }
 
 void openrgb_request_protocol_version() {

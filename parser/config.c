@@ -11,7 +11,7 @@ uint8_t parse_config(const char *config_file) {
     config_init(&cfg);
 
     if (!config_read_file(&cfg, config_file)) {
-        logger("Error reading config file: %s\n", config_error_text(&cfg));
+        logger_debug("Error reading config file: %s\n", config_error_text(&cfg));
         config_destroy(&cfg);
         return 1;
     }

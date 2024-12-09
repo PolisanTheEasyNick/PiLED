@@ -39,7 +39,8 @@ int main(int argc, char *argv[]) {
 
     if (OPENRGB_SERVER) {
         logger("OpenRGB server IP is set, starting OpenRGB!");
-        openrgb_init();
+        pthread_t orgb_thread;
+        pthread_create(&orgb_thread, NULL, openrgb_init, NULL);
     } else {
         logger("Not starting OpenRGB since OpenRGB server IP not set.");
     }
