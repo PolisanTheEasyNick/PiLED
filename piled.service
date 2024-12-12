@@ -4,8 +4,6 @@ After=network.target
 
 [Service]
 ExecStart=/usr/local/bin/piled
-StandardOutput=syslog
-StandardError=syslog
 SyslogIdentifier=piled
 
 [Install]
