@@ -11,15 +11,15 @@ uint8_t parse_config(const char *config_file) {
     config_init(&cfg);
 
     if (!config_read_file(&cfg, config_file)) {
-        logger_debug("Error reading config file: %s\n", config_error_text(&cfg));
+        logger_debug(PARSER, "Error reading config file: %s\n", config_error_text(&cfg));
         config_destroy(&cfg);
         return 1;
     }
-    logger_debug("Opened config file");
+    logger_debug(PARSER, "Opened config file");
 #ifndef ORGBCONFIGURATOR
     const char *addr;
     if (!config_lookup_string(&cfg, "PI_ADDR", &addr)) {
-        logger("Missing PI_ADDR in config file, using default (NULL)\n");
+        logger(PARSER, "Missing PI_ADDR in config file, using default (NULL)\n");
         PI_ADDR = NULL;
     } else {
         PI_ADDR = malloc(strlen(addr) + 1);
@@ -29,7 +29,7 @@ uint8_t parse_config(const char *config_file) {
 
     const char *port;
     if (!config_lookup_string(&cfg, "PI_PORT", &port)) {
-        logger("Missing PI_PORT in config file, using default (8888)\n");
+        logger(PARSER, "Missing PI_PORT in config file, using default (8888)\n");
         PI_PORT = NULL;
     } else {
         PI_PORT = malloc(strlen(port) + 1);
@@ -38,24 +38,24 @@ uint8_t parse_config(const char *config_file) {
     }
 
     if (!config_lookup_int(&cfg, "RED_PIN", &RED_PIN)) {
-        logger("Missing RED_PIN in config file!\n");
+        logger(PARSER, "Missing RED_PIN in config file!\n");
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
 
     if (!config_lookup_int(&cfg, "GREEN_PIN", &GREEN_PIN)) {
-        logger("Missing GREEN_PIN in config file!\n");
+        logger(PARSER, "Missing GREEN_PIN in config file!\n");
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
     if (!config_lookup_int(&cfg, "BLUE_PIN", &BLUE_PIN)) {
-        logger("Missing BLUE_PIN in config file!\n");
+        logger(PARSER, "Missing BLUE_PIN in config file!\n");
         config_destroy(&cfg);
         exit(EXIT_FAILURE);
     }
     const char *secret;
     if (!config_lookup_string(&cfg, "SHARED_SECRET", &secret)) {
-        logger("Missing SHARED_SECRET in config file\n");
+        logger(PARSER, "Missing SHARED_SECRET in config file\n");
         SHARED_SECRET = NULL;
         return -1;
     }
@@ -65,7 +65,7 @@ uint8_t parse_config(const char *config_file) {
 #endif
     const char *openrgb_addr;
     if (!config_lookup_string(&cfg, "OPENRGB_SERVER", &openrgb_addr)) {
-        logger("Missing OPENRGB_SERVER in config file\n");
+        logger(PARSER, "Missing OPENRGB_SERVER in config file\n");
         OPENRGB_SERVER = NULL;
     } else {
         OPENRGB_SERVER = malloc(strlen(openrgb_addr) + 1);
@@ -74,11 +74,12 @@ uint8_t parse_config(const char *config_file) {
     }
 
     if (!config_lookup_int(&cfg, "OPENRGB_PORT", &OPENRGB_PORT)) {
-        logger("Missing OPENRGB_PORT in config file, using default 6742\n");
+        logger(PARSER, "Missing OPENRGB_PORT in config file, using default 6742\n");
         OPENRGB_PORT = 6742;
     }
 #ifndef ORGBCONFIGURATOR
-    logger("Passed config:\nRaspberry Pi address: %s\nPort: %s\nRed pin: %d\nGreen pin: %d\nBlue pin: %d\nShared "
+    logger(PARSER,
+           "Passed config:\nRaspberry Pi address: %s\nPort: %s\nRed pin: %d\nGreen pin: %d\nBlue pin: %d\nShared "
            "secret: %s\nOpenRGB server: %s\nOpenRGB Port: %d\n",
            PI_ADDR, PI_PORT, RED_PIN, GREEN_PIN, BLUE_PIN, SHARED_SECRET, OPENRGB_SERVER, OPENRGB_PORT);
 #endif
@@ -102,47 +103,47 @@ void parse_args(int argc, char *argv[]) {
         switch (opt) {
         case 's':
             snprintf(PI_ADDR, sizeof(PI_ADDR), "%s", optarg);
-            logger("RPi Server address set to: %s", PI_ADDR);
+            logger(PARSER, "RPi Server address set to: %s", PI_ADDR);
             break;
         case 'p':
             snprintf(PI_PORT, sizeof(PI_PORT), "%s", optarg);
-            logger("Server port set to: %d", PI_PORT);
+            logger(PARSER, "Server port set to: %d", PI_PORT);
             break;
         case 'R':
             RED_PIN = atoi(optarg);
-            logger("Red pin set to: %d", RED_PIN);
+            logger(PARSER, "Red pin set to: %d", RED_PIN);
             break;
         case 'G':
             GREEN_PIN = atoi(optarg);
-            logger("Green pin set to: %d", GREEN_PIN);
+            logger(PARSER, "Green pin set to: %d", GREEN_PIN);
             break;
         case 'B':
             BLUE_PIN = atoi(optarg);
-            logger("Blue pin set to: %d", BLUE_PIN);
+            logger(PARSER, "Blue pin set to: %d", BLUE_PIN);
             break;
         case 'S':
             snprintf(SHARED_SECRET, sizeof(SHARED_SECRET), "%s", optarg);
-            logger("Shared secret set to: %s", SHARED_SECRET);
+            logger(PARSER, "Shared secret set to: %s", SHARED_SECRET);
             break;
         case 'O': {
             snprintf(OPENRGB_SERVER, sizeof(OPENRGB_SERVER), "%s", optarg);
-            logger("OpenRGB server address set to: %s", OPENRGB_SERVER);
+            logger(PARSER, "OpenRGB server address set to: %s", OPENRGB_SERVER);
             break;
         }
         case 'P': {
             OPENRGB_PORT = atoi(optarg);
-            logger("OpenRGB Server port set to: %d", OPENRGB_PORT);
+            logger(PARSER, "OpenRGB Server port set to: %d", OPENRGB_PORT);
             break;
         }
         default:
-            logger("Unknown option or missing argument. Exiting.");
+            logger(PARSER, "Unknown option or missing argument. Exiting.");
             exit(EXIT_FAILURE);
         }
     }
 }
 
 uint8_t try_load_config(const char *config_path) {
-    logger_debug("Trying to load config from: %s", config_path);
+    logger_debug(PARSER, "Trying to load config from: %s", config_path);
     return parse_config(config_path);
 }
 
@@ -157,7 +158,7 @@ int load_config() {
     }
 
     if (try_load_config("/etc/piled/piled.conf") != 0) {
-        logger("Can't load any of the configs! Aborting.");
+        logger(PARSER, "Can't load any of the configs! Aborting.");
         return -1;
     }
 

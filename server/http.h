@@ -19,7 +19,7 @@ static enum MHD_Result answer_to_connection(void *cls, struct MHD_Connection *co
     }
 
     if (is_suspended) {
-        logger_debug("HTTP: Received request but PiLED is suspended! Ignoring.");
+        logger_debug(HTTP, "HTTP: Received request but PiLED is suspended! Ignoring.");
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen("403: PiLED is in Suspend Mode!"), (void *)"403: PiLED is in Suspend Mode!", MHD_RESPMEM_PERSISTENT);
         if (!response) {
@@ -44,7 +44,7 @@ static enum MHD_Result answer_to_connection(void *cls, struct MHD_Connection *co
     uint8_t blue = atoi(BLUE_str);
     uint8_t duration = atoi(DURATION_str);
 
-    logger_debug("HTTP: Received colors: R=%d, G=%d, B=%d, Duration=%d s\n", red, green, blue, duration);
+    logger_debug(HTTP, "HTTP: Received colors: R=%d, G=%d, B=%d, Duration=%d s\n", red, green, blue, duration);
     set_color_duration(pi, (struct Color){red, green, blue}, duration);
     int ret;
     struct MHD_Response *response;
@@ -59,11 +59,11 @@ void *http_server_thread(void *arg) {
 
     daemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY, PORT, NULL, NULL, &answer_to_connection, NULL, MHD_OPTION_END);
     if (NULL == daemon) {
-        logger_debug("Failed to start the HTTP server");
+        logger_debug(HTTP, "Failed to start the HTTP server");
         return NULL;
     }
 
-    logger("Started HTTP Server on port %d", PORT);
+    logger(HTTP, "Started HTTP Server on port %d", PORT);
 
     while (!stop_server)
         ;
@@ -77,7 +77,7 @@ void start_http_server(uint8_t pi_) {
     pthread_t server_thread;
 
     if (pthread_create(&server_thread, NULL, http_server_thread, NULL) != 0) {
-        logger("Failed to create HTTP server thread");
+        logger(HTTP, "Failed to create HTTP server thread");
         return;
     }
 
