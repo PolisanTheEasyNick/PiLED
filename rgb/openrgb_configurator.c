@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     if (OPENRGB_SERVER) {
         openrgb_init();
     } else {
-        logger("OpenRGB server ip not set! Aborting.");
+        logger(OPENRGB, "OpenRGB server ip not set! Aborting.");
         return -1;
     }
 

@@ -25,13 +25,13 @@ void add_client_fd(int client_fd) {
 
     int *new_clients_fds = realloc(clients_fds, sizeof(int) * (clients_count + 1));
     if (new_clients_fds == NULL) {
-        logger("Failed to realloc memory for clients_fds");
+        logger(TCP, "Failed to realloc memory for clients_fds");
         close(client_fd);
     } else {
         clients_fds = new_clients_fds;
         clients_fds[clients_count++] = client_fd;
     }
-    logger("Client with fd %d connected\n", client_fd);
+    logger(TCP, "Client with fd %d connected\n", client_fd);
     pthread_mutex_unlock(&clients_mutex);
 }
 
@@ -57,12 +57,12 @@ void remove_client_fd(int client_fd) {
             clients_fds = new_clients_fds;
         }
     }
-    logger("Client with fd %d disconnected\n", client_fd);
+    logger(TCP, "Client with fd %d disconnected\n", client_fd);
     pthread_mutex_unlock(&clients_mutex);
 }
 
 void stop_animation() {
-    logger_debug("Stop animation function called.");
+    logger_debug(TCP, "Stop animation function called.");
     // pthread_mutex_lock(&animation_mutex);
     if (is_animating) {
         is_animating = 0;
@@ -114,35 +114,35 @@ void *handle_client(void *client_sock) {
                 break;
             }
 
-            logger_debug("Received: %d bytes.", bytes_received);
+            logger_debug(TCP, "Received: %d bytes.", bytes_received);
             struct parse_result result = parse_message(buffer);
 
             if (is_suspended && result.OP != SYS_TOGGLE_SUSPEND) {
-                logger("Received package, but PiLED is in *suspended* mode! Ignoring.");
+                logger(TCP, "Received package, but PiLED is in *suspended* mode! Ignoring.");
                 continue;
             }
 
-            logger_debug("Result of parsing: %d", result.result);
+            logger_debug(TCP, "Result of parsing: %d", result.result);
             if (result.result == 0) {
-                logger_debug("Successfully parsed and checked packet, processing. v%d", result.version);
+                logger_debug(TCP, "Successfully parsed and checked packet, processing. v%d", result.version);
                 switch (result.version) {
                 case 4:
                 case 3: {
-                    logger_debug("v%d, OP is: %d", result.version, result.OP);
+                    logger_debug(TCP, "v%d, OP is: %d", result.version, result.OP);
                     switch (result.OP) {
                     case LED_SET_COLOR: {
-                        logger("Requested LED_SET_COLOR with %d %d %d on %d seconds, setting.", result.RED,
+                        logger(TCP, "Requested LED_SET_COLOR with %d %d %d on %d seconds, setting.", result.RED,
                                result.GREEN, result.BLUE, result.duration);
                         set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
                         break;
                     }
                     case LED_GET_CURRENT_COLOR: {
-                        logger("Requested LED_GET_CURRENT_COLOR, sending...");
+                        logger(TCP, "Requested LED_GET_CURRENT_COLOR, sending...");
                         send_info_about_color();
                         break;
                     }
                     case ANIM_SET_FADE: {
-                        logger("Requested ANIM_SET_FADE.");
+                        logger(TCP, "Requested ANIM_SET_FADE.");
                         stop_animation();
                         struct fade_animation_args *args = malloc(sizeof(struct fade_animation_args));
                         args->pi = pi;
@@ -152,13 +152,13 @@ void *handle_client(void *client_sock) {
                             perror("Failed to create thread");
                             free(args);
                         } else {
-                            logger("Started fade animation thread!");
+                            logger(TCP, "Started fade animation thread!");
                         }
                         pthread_mutex_unlock(&animation_mutex);
                         break;
                     }
                     case ANIM_SET_PULSE: {
-                        logger("Requested ANIM_SET_PULSE");
+                        logger(TCP, "Requested ANIM_SET_PULSE");
                         stop_animation();
                         struct pulse_animation_args *args = malloc(sizeof(struct pulse_animation_args));
                         args->pi = pi;
@@ -169,13 +169,13 @@ void *handle_client(void *client_sock) {
                             perror("Failed to create thread");
                             free(args);
                         } else {
-                            logger("Started pulse animation thread!");
+                            logger(TCP, "Started pulse animation thread!");
                         }
                         pthread_mutex_unlock(&animation_mutex);
                         break;
                     }
                     case SYS_TOGGLE_SUSPEND: {
-                        logger("Requested SYS_TOGGLE_SUSPEND.");
+                        logger(TCP, "Requested SYS_TOGGLE_SUSPEND.");
                         stop_animation();
                         is_suspended = !is_suspended;
                         set_color_duration(pi,
@@ -189,13 +189,13 @@ void *handle_client(void *client_sock) {
                     break;
                 }
                 case 2: {
-                    logger("v2, setting with duration");
+                    logger(TCP, "v2, setting with duration");
                     set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, result.duration);
                     break;
                 }
                 case 1:
                 default: {
-                    logger("v1, setting without duration");
+                    logger(TCP, "v1, setting without duration");
                     set_color_duration(pi, (struct Color){result.RED, result.GREEN, result.BLUE}, 0);
                     break;
                 }
@@ -244,7 +244,7 @@ int start_server(int pi, int port) {
         return -1;
     }
 
-    logger("Server listening on port %d\n", port);
+    logger(TCP, "Server listening on port %d", port);
 
     fd_set read_fds;
     struct timeval timeout;
@@ -297,7 +297,7 @@ int start_server(int pi, int port) {
 void send_info_about_color() {
     struct Color color = {get_PWM_dutycycle(pi, RED_PIN), get_PWM_dutycycle(pi, GREEN_PIN),
                           get_PWM_dutycycle(pi, BLUE_PIN)};
-    logger_debug("Sending info about current color: %d %d %d", color.RED, color.GREEN, color.BLUE);
+    logger_debug(TCP, "Sending info about current color: %d %d %d", color.RED, color.GREEN, color.BLUE);
     // generating HEADER
     uint8_t HEADER[18];
 
@@ -338,11 +338,11 @@ void send_info_about_color() {
     memcpy(tcp_package + 18, GENERATED_HMAC, 32);
     memcpy(tcp_package + 50, PAYLOAD, 5);
     for (int client = 0; client < clients_count; client++) {
-        logger_debug("Sending package to client fd %d", clients_fds[client]);
+        logger_debug(TCP, "Sending package to client fd %d", clients_fds[client]);
         ssize_t sent_bytes = send(clients_fds[client], tcp_package, 55, MSG_DONTWAIT);
         if (sent_bytes < 0) {
             perror("send");
-            logger_debug("Failed to send to client fd %d, removing client", clients_fds[client]);
+            logger_debug(TCP, "Failed to send to client fd %d, removing client", clients_fds[client]);
             close(clients_fds[client]);
             remove_client_fd(clients_fds[client]);
         }

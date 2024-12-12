@@ -19,7 +19,7 @@
 #endif
 
 void handle_sigint(int sig) {
-    logger("Stopping server!");
+    logger(MAIN, "Stopping server!");
     stop_server = 1;
     openrgb_stop_server = 1;
     openrgb_exit = 1;
@@ -38,19 +38,19 @@ int main(int argc, char *argv[]) {
     parse_args(argc, argv);
 
     if (OPENRGB_SERVER) {
-        logger("OpenRGB server IP is set, starting OpenRGB!");
+        logger(MAIN, "OpenRGB server IP is set, starting OpenRGB!");
         pthread_t orgb_thread;
         pthread_create(&orgb_thread, NULL, openrgb_init, NULL);
     } else {
-        logger("Not starting OpenRGB since OpenRGB server IP not set.");
+        logger(MAIN, "Not starting OpenRGB since OpenRGB server IP not set.");
     }
 
     pi = pigpio_start(PI_ADDR, PI_PORT);
     if (pi < 0) {
-        logger("Pigpio initialization failed.\n");
+        logger(MAIN, "Pigpio initialization failed.\n");
         return 1;
     }
-    logger("Connected to pigpio daemon successfully!");
+    logger(MAIN, "Connected to pigpio daemon successfully!");
 
     set_mode(pi, RED_PIN, PI_OUTPUT);
     set_mode(pi, GREEN_PIN, PI_OUTPUT);
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    logger("See you next time!");
+    logger(MAIN, "See you next time!");
     pigpio_stop(pi);
     openrgb_shutdown();
     free(PI_ADDR);
